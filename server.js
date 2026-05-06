@@ -105,12 +105,12 @@ async function sendOrderEmail(order, checkoutUrl) {
   const photoPath = order.foto ? path.join(ordersDir, order.foto.arquivo) : null;
   const attachments = photoPath
     ? [
-        {
-          filename: order.foto.nomeOriginal || path.basename(photoPath),
-          path: photoPath,
-          contentType: order.foto.tipo,
-        },
-      ]
+      {
+        filename: order.foto.nomeOriginal || path.basename(photoPath),
+        path: photoPath,
+        contentType: order.foto.tipo,
+      },
+    ]
     : [];
 
   const subject = `Novo pedido ${order.plano} - ${order.cliente.nome || order.id}`;
@@ -265,7 +265,9 @@ app.post("/create-checkout", async (req, res) => {
 
 app.use(express.static("."));
 
-app.listen(3000, () => {
-  console.log("Servidor rodando em http://localhost:3000");
+const port = process.env.PORT || 3000;
+
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
 });
 
