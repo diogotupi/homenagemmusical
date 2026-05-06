@@ -79,7 +79,7 @@ document.querySelectorAll('input[type="file"][name="foto"]').forEach((input) => 
     if (input.files.length > 1) {
       input.value = "";
     }
-    
+
     if (checkSpan) {
       if (input.files.length === 1) {
         checkSpan.removeAttribute('hidden');
@@ -128,12 +128,12 @@ async function sendOrder(form, note) {
 
   note.textContent = "Abrindo checkout...";
 
-  const response = await fetch("http://localhost:3000/create-checkout", {
+  const response = await fetch("/create-checkout", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 
   if (!response.ok) {
