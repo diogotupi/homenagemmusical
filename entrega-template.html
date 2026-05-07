@@ -142,6 +142,8 @@
             font-weight: 600;
             transition: all 0.2s;
             border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 1001; /* Above overlay */
         }
 
         .btn-download-photo:hover {
@@ -153,15 +155,15 @@
         .photo-tooltip {
             position: absolute;
             top: 55px;
-            left: 0;
+            left: 40px; /* Moved more to the right */
             background: var(--white);
             color: var(--ink);
             padding: 16px;
             border-radius: 16px;
             font-size: 0.85rem;
             width: 280px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1002; /* Above overlay and button */
             opacity: 0;
             transform: translateY(10px);
             transition: all 0.5s ease;
@@ -183,6 +185,25 @@
             border-left: 8px solid transparent;
             border-right: 8px solid transparent;
             border-bottom: 8px solid var(--white);
+        }
+
+        /* Overlay Background */
+        .page-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .page-overlay.active {
+            opacity: 1;
+            pointer-events: all;
         }
 
         .tooltip-close {
@@ -490,6 +511,7 @@
 </head>
 <body>
     <div class="main-wrapper">
+        <div class="page-overlay" id="pageOverlay"></div>
         <header>
             <a href="/" class="logo">
                 <div class="logo-icon">H</div>
@@ -661,14 +683,20 @@
         // Tooltip logic
         const photoTooltip = document.getElementById('photoTooltip');
         const closeTooltip = document.getElementById('closeTooltip');
+        const pageOverlay = document.getElementById('pageOverlay');
 
         setTimeout(() => {
             photoTooltip.classList.add('active');
+            pageOverlay.classList.add('active');
         }, 2000);
 
-        closeTooltip.addEventListener('click', () => {
+        const dismissTooltip = () => {
             photoTooltip.classList.remove('active');
-        });
+            pageOverlay.classList.remove('active');
+        };
+
+        closeTooltip.addEventListener('click', dismissTooltip);
+        pageOverlay.addEventListener('click', dismissTooltip);
     </script>
 </body>
 </html>
