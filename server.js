@@ -78,6 +78,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const ordersDir = path.resolve("pedidos");
 const uploadsDir = path.join(ordersDir, "uploads");
 const emailTo = process.env.EMAIL_TO || "diogotupi09@gmail.com";
+const deliveriesDataDir = path.join(ordersDir, "entregas");
+
 const deliveriesDir = path.resolve("entregas");
 const deliveryUploadsDir = path.join(path.resolve("uploads"), "entregas");
 
@@ -334,74 +336,40 @@ app.post("/create-checkout", async (req, res) => {
   }
 });
 
-// New Delivery Generation Endpoint
+// New Delivery Generation Endpoint (Saves JSON instead of HTML)
 app.post("/api/generate-delivery", async (req, res) => {
   try {
-    const { clientName, songTitle, lyrics } = req.body;
-    const files = req.files;
+    const { clientName, songTitle, lyrics, photoUrl, songNames, songUrls } = req.body;
 
-    if (!clientName || !songTitle || !lyrics || !files || !files.photo) {
+    if (!clientName || !songTitle || !lyrics || !photoUrl || !songUrls) {
       return res.status(400).json({ error: "Dados incompletos" });
     }
 
-    await mkdir(deliveriesDir, { recursive: true });
-    await mkdir(deliveryUploadsDir, { recursive: true });
+    await mkdir(deliveriesDataDir, { recursive: true });
 
-    // Save Photo
-    const photoFile = files.photo;
-    const photoExt = path.extname(photoFile.name);
-    const photoName = `${clientName}_photo${photoExt}`;
-    const photoPath = path.join(deliveryUploadsDir, photoName);
-    await photoFile.mv(photoPath);
-    const photoUrl = `/uploads/entregas/${photoName}`;
+    const deliveryData = {
+      clientName,
+      songTitle,
+      lyrics,
+      photoUrl,
+      songs: []
+    };
 
-    // Save Songs
-    let songsHtml = "";
-    const songFiles = [];
-    
-    // Handle both single and multiple files
-    const audioFiles = Array.isArray(files.songs) ? files.songs : [files.songs];
-    const songNames = Array.isArray(req.body.songNames) ? req.body.songNames : [req.body.songNames];
+    const urls = Array.isArray(songUrls) ? songUrls : [songUrls];
+    const names = Array.isArray(songNames) ? songNames : [songNames];
 
-    for (let i = 0; i < audioFiles.length; i++) {
-      const audioFile = audioFiles[i];
-      if (!audioFile) continue;
-
-      const audioExt = path.extname(audioFile.name);
-      const audioName = `${clientName}_song_${i}${audioExt}`;
-      const audioPath = path.join(deliveryUploadsDir, audioName);
-      await audioFile.mv(audioPath);
-
-      const audioUrl = `/uploads/entregas/${audioName}`;
-      const name = songNames[i] || `Versão ${i + 1}`;
-
-      songsHtml += `
-        <div class="song-item">
-            <div class="song-index">${i + 1}</div>
-            <div class="song-details">
-                <span class="song-name">${name}</span>
-                <span class="song-artist">Homenagem Musical</span>
-            </div>
-            <button class="play-btn-small" onclick="playSong('${audioUrl}', '${name}')">
-                <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
-            </button>
-            <a href="${audioUrl}" download class="download-link">Baixar</a>
-        </div>
-      `;
+    for (let i = 0; i < urls.length; i++) {
+      if (urls[i] && urls[i].trim() !== "") {
+        deliveryData.songs.push({
+          url: urls[i],
+          name: names[i] || `Versão ${i + 1}`
+        });
+      }
     }
 
-    // Read Template
-    let template = await readFile("entrega-template.html", "utf8");
-
-    // Replace Placeholders
-    template = template.replaceAll("[[PHOTO_URL]]", photoUrl);
-    template = template.replaceAll("[[SONG_TITLE]]", songTitle);
-    template = template.replaceAll("[[LYRICS]]", lyrics.replace(/\n/g, "<br>"));
-    template = template.replaceAll("[[SONGS_HTML]]", songsHtml);
-
-    // Save generated page
-    const deliveryFilePath = path.join(deliveriesDir, `${clientName}.html`);
-    await writeFile(deliveryFilePath, template, "utf8");
+    // Save JSON data
+    const dataFilePath = path.join(deliveriesDataDir, `${clientName}.json`);
+    await writeFile(dataFilePath, JSON.stringify(deliveryData, null, 2), "utf8");
 
     res.json({ success: true, url: `/entrega/${clientName}` });
   } catch (err) {
@@ -410,15 +378,47 @@ app.post("/api/generate-delivery", async (req, res) => {
   }
 });
 
-// Serve deliveries and uploads
-app.use("/entrega/:client", async (req, res, next) => {
-  const client = req.params.client;
-  const filePath = path.join(deliveriesDir, `${client}.html`);
+// Dynamic Rendering Route
+app.get("/entrega/:client", async (req, res) => {
   try {
-    await readFile(filePath);
-    res.sendFile(filePath);
-  } catch (e) {
-    next();
+    const client = req.params.client;
+    const dataPath = path.join(deliveriesDataDir, `${client}.json`);
+    
+    // Read JSON data
+    const dataRaw = await readFile(dataPath, "utf8");
+    const data = JSON.parse(dataRaw);
+
+    // Read Template
+    let template = await readFile("entrega-template.html", "utf8");
+
+    // Build Songs HTML
+    let songsHtml = "";
+    data.songs.forEach((song, i) => {
+      songsHtml += `
+        <div class="song-item">
+            <div class="song-index">${i + 1}</div>
+            <div class="song-details">
+                <span class="song-name">${song.name}</span>
+                <span class="song-artist">Homenagem Musical</span>
+            </div>
+            <button class="play-btn-small" onclick="playSong('${song.url}', '${song.name}')">
+                <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
+            </button>
+            <a href="${song.url}" download class="download-link">Baixar</a>
+        </div>
+      `;
+    });
+
+    // Replace Placeholders
+    template = template.replaceAll("[[PHOTO_URL]]", data.photoUrl);
+    template = template.replaceAll("[[SONG_TITLE]]", data.songTitle);
+    template = template.replaceAll("[[LYRICS]]", data.lyrics.replace(/\n/g, "<br>"));
+    template = template.replaceAll("[[SONGS_HTML]]", songsHtml);
+
+    res.send(template);
+  } catch (err) {
+    console.error("Erro ao renderizar entrega:", err);
+    res.status(404).send("<h1>Página de entrega não encontrada</h1><p>Verifique o link ou entre em contato com o suporte.</p>");
   }
 });
 

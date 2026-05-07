@@ -218,26 +218,26 @@
             </div>
 
             <div class="upload-section">
-                <label>Foto de Capa</label>
-                <input type="file" name="photo" accept="image/*" required style="margin-bottom: 20px;">
+                <label>Link da Foto (Cloudinary)</label>
+                <input type="text" name="photoUrl" placeholder="https://res.cloudinary.com/..." required style="margin-bottom: 20px;">
 
-                <h3>Músicas (suba até 4 versões)</h3>
+                <h3>Músicas (links do Cloudinary)</h3>
                 <div id="songsList">
                     <div class="song-row">
-                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Principal)" value="Versão Principal">
-                        <input type="file" name="songs" accept="audio/*" required>
+                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Principal)" value="Versão Principal">
+                        <input type="text" name="songUrls[]" placeholder="Link do MP3" required>
                     </div>
                     <div class="song-row">
-                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Acústica)">
-                        <input type="file" name="songs" accept="audio/*">
+                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Acústica)">
+                        <input type="text" name="songUrls[]" placeholder="Link do MP3">
                     </div>
                     <div class="song-row">
-                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Instrumental)">
-                        <input type="file" name="songs" accept="audio/*">
+                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Instrumental)">
+                        <input type="text" name="songUrls[]" placeholder="Link do MP3">
                     </div>
                     <div class="song-row">
-                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Estendida)">
-                        <input type="file" name="songs" accept="audio/*">
+                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Estendida)">
+                        <input type="text" name="songUrls[]" placeholder="Link do MP3">
                     </div>
                 </div>
             </div>
