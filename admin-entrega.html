@@ -340,7 +340,7 @@
 
                 html = html.replaceAll("[[PHOTO_URL]]", photoUrl);
                 html = html.replaceAll("[[SONG_TITLE]]", songTitle);
-                html = html.replaceAll("[[LYRICS]]", lyrics.replace(/\n/g, "<br>"));
+                html = html.replaceAll("[[LYRICS]]", lyrics);
                 html = html.replaceAll("[[SONGS_HTML]]", songsHtml);
 
                 const blob = new Blob([html], { type: 'text/html' });

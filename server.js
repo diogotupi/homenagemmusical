@@ -410,7 +410,7 @@ app.get("/entrega/:client", async (req, res) => {
     // Replace Placeholders
     template = template.replaceAll("[[PHOTO_URL]]", data.photoUrl);
     template = template.replaceAll("[[SONG_TITLE]]", data.songTitle);
-    template = template.replaceAll("[[LYRICS]]", data.lyrics.replace(/\n/g, "<br>"));
+    template = template.replaceAll("[[LYRICS]]", data.lyrics);
     template = template.replaceAll("[[SONGS_HTML]]", songsHtml);
 
     res.send(template);
