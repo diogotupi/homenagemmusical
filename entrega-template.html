@@ -154,21 +154,38 @@
         /* Tooltip Style */
         .photo-tooltip {
             position: absolute;
-            top: 55px;
-            left: 40px; /* Moved more to the right */
-            background: var(--white);
-            color: var(--ink);
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 0.85rem;
-            width: 280px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 1002; /* Above overlay and button */
+            top: 60px;
+            left: 20px;
+            background: #ffffff;
+            color: #16120f;
+            padding: 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            width: 300px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            z-index: 1002;
             opacity: 0;
             transform: translateY(10px);
-            transition: all 0.5s ease;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
-            line-height: 1.4;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 600px) {
+            .photo-tooltip {
+                left: 50%;
+                transform: translate(-50%, 10px);
+                width: calc(100vw - 40px);
+                max-width: 320px;
+                top: 70px;
+            }
+            .photo-tooltip.active {
+                transform: translate(-50%, 0);
+            }
+            .photo-tooltip::after {
+                left: 50%;
+                transform: translateX(-50%);
+            }
         }
 
         .photo-tooltip.active {
@@ -536,7 +553,7 @@
                         <div class="photo-tooltip" id="photoTooltip">
                             <button class="tooltip-close" id="closeTooltip">&times;</button>
                             <strong>Dica especial ✨</strong>
-                            <p>Clique para baixar sua imagem e usar como quiser. Ela está em formato A4. Você pode emoldurar para presentear, imprimir, ou fazer o que quiser! Escaneie o QR code nela para vir até essa página aqui! 🙂</p>
+                            <p>Clique para baixar sua imagem e usar como quiser. Você pode imprimir, emoldurar e presentear. Escaneie o QR code da imagem para ouvir a sua música. 🙂</p>
                         </div>
                     </div>
                 </div>
