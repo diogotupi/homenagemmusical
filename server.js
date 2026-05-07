@@ -80,9 +80,6 @@ const uploadsDir = path.join(ordersDir, "uploads");
 const emailTo = process.env.EMAIL_TO || "diogotupi09@gmail.com";
 const deliveriesDataDir = path.join(ordersDir, "entregas");
 
-const deliveriesDir = path.resolve("entregas");
-const deliveryUploadsDir = path.join(path.resolve("uploads"), "entregas");
-
 
 const prices = {
   essencial: 4900,
@@ -355,6 +352,7 @@ app.post("/api/generate-delivery", async (req, res) => {
       songs: []
     };
 
+    // Ensure they are arrays (express-fileupload handles multiple same-name fields as array)
     const urls = Array.isArray(songUrls) ? songUrls : [songUrls];
     const names = Array.isArray(songNames) ? songNames : [songNames];
 
@@ -383,7 +381,7 @@ app.get("/entrega/:client", async (req, res) => {
   try {
     const client = req.params.client;
     const dataPath = path.join(deliveriesDataDir, `${client}.json`);
-    
+
     // Read JSON data
     const dataRaw = await readFile(dataPath, "utf8");
     const data = JSON.parse(dataRaw);

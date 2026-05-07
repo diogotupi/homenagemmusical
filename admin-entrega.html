@@ -224,20 +224,20 @@
                 <h3>Músicas (links do Cloudinary)</h3>
                 <div id="songsList">
                     <div class="song-row">
-                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Principal)" value="Versão Principal">
-                        <input type="text" name="songUrls[]" placeholder="Link do MP3" required>
+                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Principal)" value="Versão Principal">
+                        <input type="text" name="songUrls" placeholder="Link do MP3" required>
                     </div>
                     <div class="song-row">
-                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Acústica)">
-                        <input type="text" name="songUrls[]" placeholder="Link do MP3">
+                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Acústica)">
+                        <input type="text" name="songUrls" placeholder="Link do MP3">
                     </div>
                     <div class="song-row">
-                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Instrumental)">
-                        <input type="text" name="songUrls[]" placeholder="Link do MP3">
+                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Instrumental)">
+                        <input type="text" name="songUrls" placeholder="Link do MP3">
                     </div>
                     <div class="song-row">
-                        <input type="text" name="songNames[]" placeholder="Nome (Ex: Versão Estendida)">
-                        <input type="text" name="songUrls[]" placeholder="Link do MP3">
+                        <input type="text" name="songNames" placeholder="Nome (Ex: Versão Estendida)">
+                        <input type="text" name="songUrls" placeholder="Link do MP3">
                     </div>
                 </div>
             </div>
@@ -250,6 +250,11 @@
             <p style="font-weight: 700; color: #166534;">✨ Página gerada com sucesso!</p>
             <p style="font-size: 0.9rem; margin-top: 5px;">O link da entrega é:</p>
             <a href="#" id="deliveryLink" class="result-link" target="_blank">Abrir Página do Cliente</a>
+            
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Para garantir que a página não suma no futuro (devido ao Render), baixe o arquivo abaixo e coloque no seu GitHub na pasta "entregas":</p>
+            <a href="#" id="downloadBtn" class="result-link" style="background: #333;" download>⬇️ Baixar HTML para o GitHub</a>
         </div>
     </div>
 
@@ -259,6 +264,7 @@
         const spinner = document.getElementById('spinner');
         const resultArea = document.getElementById('resultArea');
         const deliveryLink = document.getElementById('deliveryLink');
+        const downloadBtn = document.getElementById('downloadBtn');
 
         form.onsubmit = async (e) => {
             e.preventDefault();
@@ -270,6 +276,7 @@
             const formData = new FormData(form);
 
             try {
+                // 1. Send to server for dynamic URL
                 const response = await fetch('/api/generate-delivery', {
                     method: 'POST',
                     body: formData
@@ -280,20 +287,70 @@
                 if (data.success) {
                     deliveryLink.href = data.url;
                     deliveryLink.textContent = window.location.origin + data.url;
+                    
+                    // 2. Generate local HTML for download
+                    await prepareLocalDownload(formData);
+
                     resultArea.style.display = 'block';
                     form.reset();
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 } else {
-                    alert('Erro: ' + data.error);
+                    alert('Erro: ' + (data.error || 'Verifique se o servidor está rodando'));
                 }
             } catch (err) {
                 console.error(err);
-                alert('Erro ao conectar com o servidor.');
+                alert('Erro ao conectar com o servidor. Verifique o console.');
             } finally {
                 submitBtn.disabled = false;
                 spinner.style.display = 'none';
             }
         };
+
+        async function prepareLocalDownload(formData) {
+            try {
+                const templateResponse = await fetch('entrega-template.html');
+                let html = await templateResponse.text();
+
+                const clientName = formData.get('clientName');
+                const songTitle = formData.get('songTitle');
+                const lyrics = formData.get('lyrics');
+                const photoUrl = formData.get('photoUrl');
+                const songNames = formData.getAll('songNames');
+                const songUrls = formData.getAll('songUrls');
+
+                let songsHtml = "";
+                songUrls.forEach((url, i) => {
+                    if (url && url.trim() !== "") {
+                        const name = songNames[i] || `Versão ${i + 1}`;
+                        songsHtml += `
+                            <div class="song-item">
+                                <div class="song-index">${i + 1}</div>
+                                <div class="song-details">
+                                    <span class="song-name">${name}</span>
+                                    <span class="song-artist">Homenagem Musical</span>
+                                </div>
+                                <button class="play-btn-small" onclick="playSong('${url}', '${name}')">
+                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
+                                </button>
+                                <a href="${url}" download class="download-link">Baixar</a>
+                            </div>
+                        `;
+                    }
+                });
+
+                html = html.replaceAll("[[PHOTO_URL]]", photoUrl);
+                html = html.replaceAll("[[SONG_TITLE]]", songTitle);
+                html = html.replaceAll("[[LYRICS]]", lyrics.replace(/\n/g, "<br>"));
+                html = html.replaceAll("[[SONGS_HTML]]", songsHtml);
+
+                const blob = new Blob([html], { type: 'text/html' });
+                const downloadUrl = URL.createObjectURL(blob);
+                downloadBtn.href = downloadUrl;
+                downloadBtn.download = `${clientName}.html`;
+            } catch (e) {
+                console.error("Erro ao gerar download local:", e);
+            }
+        }
     </script>
 </body>
 </html>
