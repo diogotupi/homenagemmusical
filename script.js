@@ -1,39 +1,45 @@
-const audioContext = {
-  instance: null,
-  get() {
-    if (!this.instance) {
-      this.instance = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    return this.instance;
-  },
-};
+let currentAudio = null;
+let currentPlayingCard = null;
 
-function playNotes(card) {
-  const context = audioContext.get();
-  const notes = card.dataset.notes.split(",").map(Number);
-  const now = context.currentTime;
+function playAudio(card) {
+  const audioUrl = card.dataset.audio;
+  if (!audioUrl) return;
 
-  document.querySelectorAll(".song-card").forEach((item) => item.classList.remove("playing"));
+  // Se já estiver tocando este card, para
+  if (currentPlayingCard === card) {
+    currentAudio.pause();
+    currentAudio = null;
+    currentPlayingCard = null;
+    card.classList.remove("playing");
+    card.querySelector(".play-button").textContent = "▶";
+    return;
+  }
+
+  // Se houver outro tocando, para ele
+  if (currentAudio) {
+    currentAudio.pause();
+    currentPlayingCard.classList.remove("playing");
+    currentPlayingCard.querySelector(".play-button").textContent = "▶";
+  }
+
+  // Inicia o novo
+  currentAudio = new Audio(audioUrl);
+  currentPlayingCard = card;
   card.classList.add("playing");
+  card.querySelector(".play-button").textContent = "⏸";
 
-  notes.forEach((frequency, index) => {
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.value = frequency;
-    gain.gain.setValueAtTime(0, now + index * 0.22);
-    gain.gain.linearRampToValueAtTime(0.16, now + index * 0.22 + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.22 + 0.42);
-    oscillator.connect(gain).connect(context.destination);
-    oscillator.start(now + index * 0.22);
-    oscillator.stop(now + index * 0.22 + 0.46);
-  });
+  currentAudio.play();
 
-  window.setTimeout(() => card.classList.remove("playing"), notes.length * 240 + 320);
+  currentAudio.onended = () => {
+    card.classList.remove("playing");
+    card.querySelector(".play-button").textContent = "▶";
+    currentPlayingCard = null;
+    currentAudio = null;
+  };
 }
 
 document.querySelectorAll(".song-card").forEach((card) => {
-  card.querySelector(".play-button").addEventListener("click", () => playNotes(card));
+  card.querySelector(".play-button").addEventListener("click", () => playAudio(card));
 });
 
 document.querySelectorAll(".faq-item").forEach((item) => {
@@ -148,6 +154,27 @@ async function sendOrder(form, note) {
 
   window.location.href = result.url;
 }
+
+document.querySelectorAll('textarea[name="historia"]').forEach(textarea => {
+  const counter = textarea.closest('label').querySelector('.char-counter');
+  if (!counter) return;
+
+  const updateCounter = () => {
+    const count = textarea.value.length;
+    if (count >= 100) {
+      counter.classList.remove('invalid');
+      counter.classList.add('valid');
+      counter.textContent = `${count} caracteres (mínimo atingido)`;
+    } else {
+      counter.classList.remove('valid');
+      counter.classList.add('invalid');
+      counter.textContent = `${count} / 100 caracteres mínimos`;
+    }
+  };
+
+  textarea.addEventListener('input', updateCounter);
+  updateCounter(); // Initialize
+});
 
 document.querySelectorAll(".order-form").forEach((form) => {
   form.addEventListener("submit", async (event) => {

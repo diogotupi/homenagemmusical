@@ -121,14 +121,15 @@ img {
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.72fr);
-  gap: clamp(2rem, 5vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   width: min(1180px, calc(100% - 32px));
   margin: 78px auto 0;
-  align-items: center;
   min-height: calc(100vh - 150px);
   padding-bottom: 56px;
+  justify-content: center;
 }
 
 .eyebrow,
@@ -159,14 +160,12 @@ h1 {
   max-width: 840px;
   margin-bottom: 1.2rem;
   font-size: clamp(2.45rem, 5vw, 4.6rem);
-  white-space: nowrap;
 }
 
 h2 {
   margin-bottom: 1rem;
   max-width: 980px;
   font-size: clamp(2rem, 4.2vw, 4.35rem);
-  white-space: nowrap;
 }
 
 .hero-text {
@@ -177,12 +176,16 @@ h2 {
 }
 
 .hero-actions {
+  display: flex;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.8rem;
   margin: 2rem 0;
 }
 
 .hero-stats {
+  display: flex;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
@@ -199,32 +202,6 @@ h2 {
   color: var(--ink);
 }
 
-.hero-media {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 520px;
-}
-
-.video-placeholder {
-  display: grid;
-  place-items: center;
-  width: min(100%, 360px);
-  aspect-ratio: 9 / 16;
-  min-height: 480px;
-  border: 1px dashed rgba(22, 18, 15, 0.24);
-  border-radius: 34px;
-  color: rgba(22, 18, 15, 0.54);
-  background:
-    linear-gradient(145deg, rgba(236, 141, 120, 0.12), rgba(217, 241, 232, 0.52)),
-    rgba(255, 255, 255, 0.56);
-  box-shadow: var(--shadow);
-}
-
-.video-placeholder span {
-  font-weight: 700;
-  text-transform: uppercase;
-}
 
 .marquee {
   display: flex;
@@ -463,8 +440,8 @@ h2 {
 
 .quote p {
   font-family: "indivisible-black", sans-serif;
-  font-size: clamp(1.6rem, 3vw, 2.7rem);
-  line-height: 1.08;
+  font-size: clamp(1.4rem, 6vw, 2.7rem);
+  line-height: 1.15;
 }
 
 .quote span {
@@ -655,23 +632,32 @@ select option {
 }
 
 @media (max-width: 900px) {
-  h2 {
-    white-space: normal;
-  }
+    /* Ensure h1 also wraps on mobile and fix overlapping text */
+    h1, h2 {
+      white-space: normal;
+      overflow-wrap: break-word;
+      line-height: 1.15;
+    }
 
   .site-header {
-    align-items: stretch;
+    align-items: center;
     border-radius: 24px;
     flex-wrap: wrap;
+    padding: 8px 12px;
+    width: calc(100% - 24px);
+    margin-top: 12px;
   }
 
   .nav {
     order: 3;
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 1rem;
     overflow-x: auto;
-    padding: 0.35rem 0.2rem 0;
+    padding: 0.5rem 0.2rem 0;
+    scrollbar-width: none; /* Hide scrollbar for cleaner look */
   }
+  .nav::-webkit-scrollbar { display: none; }
 
   .header-cta {
     min-height: 38px;
@@ -693,14 +679,7 @@ select option {
     min-height: 0;
   }
 
-  .hero-media {
-    min-height: 0;
-  }
 
-  .video-placeholder {
-    width: min(100%, 320px);
-    min-height: 420px;
-  }
 
   .price-card.featured {
     transform: none;
@@ -737,11 +716,56 @@ select option {
     width: 100%;
   }
 
-  .video-placeholder {
-    min-height: 380px;
-  }
 
   .contact {
     border-radius: 24px;
+    padding: 1.5rem 1rem;
   }
+
+  .section {
+    padding: 48px 0;
+  }
+
+  .hero {
+    margin-top: 32px;
+    padding-bottom: 32px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 12vw, 2.8rem);
+    line-height: 1.1;
+  }
+
+  .steps article {
+    min-height: auto;
+  }
+
+  .price-card {
+    padding: 1.5rem 1.2rem;
+  }
+
+  .quote p {
+    font-size: 1.6rem;
+  }
+
+  .hero-text {
+    font-size: 1.05rem;
+  }
+}
+
+.char-counter {
+  font-size: 0.75rem;
+  margin-top: 6px;
+  text-align: right;
+  color: rgba(22, 18, 15, 0.44);
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.char-counter.invalid {
+  color: #ef4444;
+}
+
+.char-counter.valid {
+  color: #10b981;
 }
