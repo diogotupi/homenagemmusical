@@ -386,7 +386,7 @@
 
                 const date = new Date();
                 date.setFullYear(date.getFullYear() + 1);
-                const monthNames = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+                const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
                 const expDate = `${date.getDate()} de ${monthNames[date.getMonth()]} de ${date.getFullYear()}`;
                 html = html.replaceAll("[[EXPIRATION_MESSAGE]]", `Esta página ficará disponível até o dia ${expDate}`);
 

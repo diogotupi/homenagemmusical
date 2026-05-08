@@ -120,8 +120,8 @@ function getExpirationDate() {
   date.setFullYear(date.getFullYear() + 1);
   const day = date.getDate();
   const monthNames = [
-    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
   ];
   const month = monthNames[date.getMonth()];
   const year = date.getFullYear();
