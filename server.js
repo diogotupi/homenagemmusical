@@ -390,6 +390,72 @@ app.post("/api/generate-delivery", async (req, res) => {
   }
 });
 
+// API: Send Delivery Email
+app.post("/api/send-delivery-email", async (req, res) => {
+  const { email, deliveryLink } = req.body;
+
+  if (!email || !deliveryLink) {
+    return res.status(400).json({ error: "E-mail e link da entrega são obrigatórios." });
+  }
+
+  if (!resend) {
+    return res.status(500).json({ error: "Serviço de e-mail não configurado (RESEND_API_KEY ausente)." });
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Homenagem Musical <contato@hmusical.com.br>",
+      to: [email],
+      subject: "Sua Homenagem Musical está pronta! ❤️",
+      html: `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #16120f; margin: 0; padding: 0; background-color: #f8f9fa; }
+            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+            .content { background: #ffffff; border-radius: 24px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+            .logo { font-size: 24px; font-weight: bold; color: #b94f37; text-decoration: none; display: block; margin-bottom: 30px; }
+            h1 { font-size: 24px; margin-bottom: 20px; color: #16120f; }
+            p { font-size: 16px; margin-bottom: 30px; color: #4a4a4a; line-height: 1.8; }
+            .btn { display: inline-block; background-color: #b94f37; color: #ffffff !important; padding: 18px 36px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px; transition: background-color 0.2s; }
+            .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; }
+            .emoji { font-size: 32px; display: block; margin-bottom: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="content">
+              <a href="https://hmusical.com.br" class="logo">♪ Homenagem Musical</a>
+              <span class="emoji">🎁</span>
+              <h1>Oba! Seu pedido está pronto!</h1>
+              <p>Sua música personalizada foi finalizada com todo carinho.<br>
+              <strong>Se estiver em pé, procura uma cadeira porque você vai se emocionar.</strong></p>
+              <a href="${deliveryLink}" class="btn">Ouvir Minha Homenagem ❤️</a>
+            </div>
+            <div class="footer">
+              <p>© 2026 Homenagem Musical — Eternizando momentos em melodia.</p>
+              <p>Este e-mail foi enviado automaticamente. Por favor, não responda.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    if (error) {
+      console.error("Erro Resend:", error);
+      return res.status(400).json({ error: "Erro ao enviar e-mail via Resend." });
+    }
+
+    res.json({ success: true, id: data.id });
+  } catch (err) {
+    console.error("Erro interno no envio de e-mail:", err);
+    res.status(500).json({ error: "Erro interno no servidor." });
+  }
+});
+
 // Dynamic Rendering Route
 app.get("/entrega/:client", async (req, res) => {
   try {
