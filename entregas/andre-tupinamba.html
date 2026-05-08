@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sua Música está pronta ❤️ | Homenagem Musical</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         :root {
@@ -88,7 +90,7 @@
             height: 232px;
             min-width: 232px;
             border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
             object-fit: cover;
             background-color: #333;
         }
@@ -133,7 +135,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: var(--text-base);
             text-decoration: none;
             padding: 10px 20px;
@@ -141,14 +143,15 @@
             font-size: 0.85rem;
             font-weight: 600;
             transition: all 0.2s;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
-            z-index: 1001; /* Above overlay */
+            z-index: 1001;
+            /* Above overlay */
         }
 
         .btn-download-photo:hover {
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
         .btn-share {
@@ -183,7 +186,7 @@
             border-radius: 20px;
             font-size: 0.9rem;
             width: 300px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
             z-index: 1002;
             opacity: 0;
             transform: translateY(10px);
@@ -203,9 +206,11 @@
                 font-size: 0.85rem;
                 transform: translateY(10px);
             }
+
             .photo-tooltip.active {
                 transform: translateY(0);
             }
+
             .photo-tooltip::after {
                 left: 50%;
                 transform: translateX(-50%);
@@ -235,7 +240,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             z-index: 1000;
             opacity: 0;
             pointer-events: none;
@@ -284,7 +289,7 @@
         .playlist-section h3 {
             font-size: 1.5rem;
             margin-bottom: 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 12px;
         }
 
@@ -296,11 +301,11 @@
             transition: background-color 0.2s;
             gap: 16px;
             margin-bottom: 8px;
-            background: rgba(255,255,255,0.03);
+            background: rgba(255, 255, 255, 0.03);
         }
 
         .song-item:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .song-index {
@@ -356,7 +361,7 @@
             place-items: center;
             cursor: pointer;
             transition: transform 0.2s, background-color 0.2s;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         }
 
         .play-btn:hover {
@@ -376,18 +381,18 @@
             font-size: 0.8rem;
             padding: 8px 12px;
             border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.2s;
         }
 
         .download-link:hover {
             color: var(--text-base);
             border-color: var(--text-base);
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .lyrics-section {
-            background: rgba(255,255,255,0.03);
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
             padding: 32px;
             max-height: 600px;
@@ -408,7 +413,7 @@
             font-size: 1.1rem;
             line-height: 1.5;
             font-weight: 400;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             white-space: pre-wrap;
             overflow-y: auto;
             padding-right: 15px;
@@ -418,15 +423,18 @@
         .lyrics-content::-webkit-scrollbar {
             width: 6px;
         }
+
         .lyrics-content::-webkit-scrollbar-track {
             background: transparent;
         }
+
         .lyrics-content::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
+
         .lyrics-content::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         /* No Image State */
@@ -475,7 +483,8 @@
             height: 90px;
         }
 
-        .now-playing, .player-extra {
+        .now-playing,
+        .player-extra {
             flex: 1;
             min-width: 0;
             display: flex;
@@ -562,38 +571,47 @@
                 align-items: center;
                 text-align: center;
             }
+
             .content-grid {
                 grid-template-columns: 1fr;
             }
+
             .player-bar {
                 padding: 10px 16px;
                 height: 110px;
                 flex-direction: column;
                 justify-content: center;
             }
+
             .now-playing {
                 width: 100%;
                 margin-bottom: 10px;
                 justify-content: center;
                 gap: 8px;
             }
+
             .lyrics-section {
                 max-height: 400px;
                 padding: 24px;
             }
+
             header {
                 padding: 15px 20px;
             }
+
             .hero-section {
                 padding-top: 20px;
                 gap: 20px;
             }
+
             .volume-controls {
                 display: none;
             }
+
             .player-controls {
                 width: 100%;
             }
+
             .container {
                 padding: 10px 20px 120px;
             }
@@ -617,7 +635,8 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             letter-spacing: 0.02em;
             position: relative;
-            z-index: 1100; /* High enough to be above everything */
+            z-index: 1100;
+            /* High enough to be above everything */
         }
 
         /* Hide native audio */
@@ -626,6 +645,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="main-wrapper">
         <div class="expiration-banner">Esta página ficará disponível até o dia 8 de Maio de 2027</div>
@@ -639,27 +659,41 @@
 
         <div class="container">
             <section class="hero-section">
-                <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1777924129/depois-2_k4nwpa.jpg" alt="Capa" class="album-cover" id="mainPhoto">
+                <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778211102/hm-andre-tupinamba-vivian_o00hzn.png"
+                    alt="Capa" class="album-cover" id="mainPhoto">
                 <div class="hero-info">
                     <p class="hero-badge">Homenagem Personalizada</p>
                     <h1 class="hero-title" id="songTitle">Vivian</h1>
                     <p class="hero-subtitle">Homenagem Musical • <span>Sua música está pronta ❤️</span></p>
-                    
+
                     <div class="hero-actions" style="position: relative;">
-                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1777924129/depois-2_k4nwpa.jpg" download="homenagem_musical_foto" class="btn-download-photo" id="btnDownloadPhoto">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778211102/hm-andre-tupinamba-vivian_o00hzn.png"
+                            download="homenagem_musical_foto" class="btn-download-photo" id="btnDownloadPhoto">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
                             Baixar Foto
                         </a>
 
                         <button class="btn-share" id="btnShare">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                <polyline points="16 6 12 2 8 6"></polyline>
+                                <line x1="12" y1="2" x2="12" y2="15"></line>
+                            </svg>
                             Compartilhar
                         </button>
 
                         <div class="photo-tooltip" id="photoTooltip">
                             <button class="tooltip-close" id="closeTooltip">&times;</button>
                             <strong>Dica especial ✨</strong>
-                            <p>Clique para baixar sua imagem e usar como quiser. Você pode imprimir, emoldurar e presentear. Escaneie o QR code da imagem para ouvir a sua música. 🙂 <br><br>Ah, lembrando, esse site fica online até o dia 8 de Maio de 2027</p>
+                            <p>Clique para baixar sua imagem e usar como quiser. Você pode imprimir, emoldurar e
+                                presentear. Escaneie o QR code da imagem para ouvir a sua música. 🙂 <br><br>Ah,
+                                lembrando, esse site fica online até o dia 8 de Maio de 2027</p>
                         </div>
                     </div>
                 </div>
@@ -669,55 +703,71 @@
                 <div class="playlist-section">
                     <h3>Versões da sua música</h3>
                     <div class="songs-list" id="songsList">
-                        
-                            <div class="song-item">
-                                <div class="song-index">1</div>
-                                <div class="song-details">
-                                    <span class="song-name">v1</span>
-                                    <span class="song-artist">Homenagem Musical</span>
-                                </div>
-                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v1_jm7nc2.mp3', 'v1')">
-                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
-                                </button>
-                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v1_jm7nc2.mp3" download class="download-link">Baixar</a>
+
+                        <div class="song-item">
+                            <div class="song-index">1</div>
+                            <div class="song-details">
+                                <span class="song-name">v1</span>
+                                <span class="song-artist">Homenagem Musical</span>
                             </div>
-                        
-                            <div class="song-item">
-                                <div class="song-index">2</div>
-                                <div class="song-details">
-                                    <span class="song-name">v2</span>
-                                    <span class="song-artist">Homenagem Musical</span>
-                                </div>
-                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v2_tsqthx.mp3', 'v2')">
-                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
-                                </button>
-                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v2_tsqthx.mp3" download class="download-link">Baixar</a>
+                            <button class="play-btn-small"
+                                onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v1_jm7nc2.mp3', 'v1')">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M7 6v12l10-6z"></path>
+                                </svg>
+                            </button>
+                            <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v1_jm7nc2.mp3"
+                                download class="download-link">Baixar</a>
+                        </div>
+
+                        <div class="song-item">
+                            <div class="song-index">2</div>
+                            <div class="song-details">
+                                <span class="song-name">v2</span>
+                                <span class="song-artist">Homenagem Musical</span>
                             </div>
-                        
-                            <div class="song-item">
-                                <div class="song-index">3</div>
-                                <div class="song-details">
-                                    <span class="song-name">v3</span>
-                                    <span class="song-artist">Homenagem Musical</span>
-                                </div>
-                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v3_lqs6hl.mp3', 'v3')">
-                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
-                                </button>
-                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v3_lqs6hl.mp3" download class="download-link">Baixar</a>
+                            <button class="play-btn-small"
+                                onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v2_tsqthx.mp3', 'v2')">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M7 6v12l10-6z"></path>
+                                </svg>
+                            </button>
+                            <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v2_tsqthx.mp3"
+                                download class="download-link">Baixar</a>
+                        </div>
+
+                        <div class="song-item">
+                            <div class="song-index">3</div>
+                            <div class="song-details">
+                                <span class="song-name">v3</span>
+                                <span class="song-artist">Homenagem Musical</span>
                             </div>
-                        
-                            <div class="song-item">
-                                <div class="song-index">4</div>
-                                <div class="song-details">
-                                    <span class="song-name">v4</span>
-                                    <span class="song-artist">Homenagem Musical</span>
-                                </div>
-                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v4_ger7u4.mp3', 'v4')">
-                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
-                                </button>
-                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v4_ger7u4.mp3" download class="download-link">Baixar</a>
+                            <button class="play-btn-small"
+                                onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v3_lqs6hl.mp3', 'v3')">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M7 6v12l10-6z"></path>
+                                </svg>
+                            </button>
+                            <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174349/Viva_a_melhor_m%C3%A3e_do_mundo_v3_lqs6hl.mp3"
+                                download class="download-link">Baixar</a>
+                        </div>
+
+                        <div class="song-item">
+                            <div class="song-index">4</div>
+                            <div class="song-details">
+                                <span class="song-name">v4</span>
+                                <span class="song-artist">Homenagem Musical</span>
                             </div>
-                        
+                            <button class="play-btn-small"
+                                onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v4_ger7u4.mp3', 'v4')">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M7 6v12l10-6z"></path>
+                                </svg>
+                            </button>
+                            <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778174348/Viva_a_melhor_m%C3%A3e_do_mundo_v4_ger7u4.mp3"
+                                download class="download-link">Baixar</a>
+                        </div>
+
                     </div>
                 </div>
 
@@ -725,67 +775,67 @@
                     <div class="lyrics-section">
                         <h3>Letra</h3>
                         <div class="lyrics-content" id="lyricsContent">
-“Essa é pro amor da minha vida…”
+                            “Essa é pro amor da minha vida…”
 
-Vivian, teu sorriso ilumina o lugar
-Teu jeito simpático faz todo mundo gostar
-Cabelo loiro dançando no vento
-Você transforma simples momentos
+                            Vivian, teu sorriso ilumina o lugar
+                            Teu jeito simpático faz todo mundo gostar
+                            Cabelo loiro dançando no vento
+                            Você transforma simples momentos
 
-Entre sonhos, lutas e emoção
-Construiu amor dentro do coração
-E ao teu lado a vida aconteceu
-Nossa família inteira floresceu
+                            Entre sonhos, lutas e emoção
+                            Construiu amor dentro do coração
+                            E ao teu lado a vida aconteceu
+                            Nossa família inteira floresceu
 
-Linda por fora e ainda mais por dentro
-Você é paz nos meus pensamentos
-E cada passo que a vida deu
-Ficou mais bonito porque foi com você
+                            Linda por fora e ainda mais por dentro
+                            Você é paz nos meus pensamentos
+                            E cada passo que a vida deu
+                            Ficou mais bonito porque foi com você
 
-Feliz Dia das Mães, meu amor
-Você é carinho, beleza e calor
-Vivian, dona do meu coração
-A estrela mais linda dessa canção
+                            Feliz Dia das Mães, meu amor
+                            Você é carinho, beleza e calor
+                            Vivian, dona do meu coração
+                            A estrela mais linda dessa canção
 
-Andrezinho já cresceu, tá esperto demais
-Nicolly virou uma mulher cheia de paz
-E os dois carregam no olhar
-Tudo de lindo que aprenderam no teu amar
+                            Andrezinho já cresceu, tá esperto demais
+                            Nicolly virou uma mulher cheia de paz
+                            E os dois carregam no olhar
+                            Tudo de lindo que aprenderam no teu amar
 
-Você gosta de cuidar de você também
-Gosta da academia,  que te faz bem
-Mas o que mais chama atenção
-É essa luz bonita no teu coração
+                            Você gosta de cuidar de você também
+                            Gosta da academia, que te faz bem
+                            Mas o que mais chama atenção
+                            É essa luz bonita no teu coração
 
-O tempo passa e eu olho pra nós
-E ainda escuto a mesma voz
-Que um dia me fez acreditar
-Que juntos pra sempre podemos ficar
+                            O tempo passa e eu olho pra nós
+                            E ainda escuto a mesma voz
+                            Que um dia me fez acreditar
+                            Que juntos pra sempre podemos ficar
 
-Você é força sem precisar provar
-Tem um brilho difícil de explicar
-E eu agradeço por cada momento
-Que Deus escreveu no nosso tempo
+                            Você é força sem precisar provar
+                            Tem um brilho difícil de explicar
+                            E eu agradeço por cada momento
+                            Que Deus escreveu no nosso tempo
 
-Feliz Dia das Mães, minha paixão
-Você é o orgulho da nossa união
-Vivian, teu amor faz florescer
-Tudo de mais bonito em viver
+                            Feliz Dia das Mães, minha paixão
+                            Você é o orgulho da nossa união
+                            Vivian, teu amor faz florescer
+                            Tudo de mais bonito em viver
 
-Andrezinho e Nicolly vão cantar
-“Mãe, pra sempre vamos te amar”
-E eu agradeço todo santo dia
-Por ter você na minha vida
+                            Andrezinho e Nicolly vão cantar
+                            “Mãe, pra sempre vamos te amar”
+                            E eu agradeço todo santo dia
+                            Por ter você na minha vida
 
-E quando o mundo inteiro mudar
-Meu coração sempre vai te encontrar
-Porque amar você ficou natural
-Como o brilho das estrelas no final
+                            E quando o mundo inteiro mudar
+                            Meu coração sempre vai te encontrar
+                            Porque amar você ficou natural
+                            Como o brilho das estrelas no final
 
-Feliz Dia das Mães, meu bem
-Nosso amor vai muito além
-Vivian, você é inspiração
-A parte mais bonita da nossa canção
+                            Feliz Dia das Mães, meu bem
+                            Nosso amor vai muito além
+                            Vivian, você é inspiração
+                            A parte mais bonita da nossa canção
 
                         </div>
                     </div>
@@ -801,7 +851,8 @@ A parte mais bonita da nossa canção
     <!-- Global Player Bar -->
     <div class="player-bar">
         <div class="now-playing">
-            <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1777924129/depois-2_k4nwpa.jpg" alt="Capa" id="playerThumb">
+            <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1777924129/depois-2_k4nwpa.jpg" alt="Capa"
+                id="playerThumb">
             <div class="now-playing-info">
                 <h4 id="playerTitle">Selecione uma versão</h4>
                 <p id="playerArtist">Homenagem Musical</p>
@@ -811,8 +862,12 @@ A parte mais bonita da nossa canção
         <div class="player-controls">
             <div class="control-buttons">
                 <button class="play-btn" id="masterPlayBtn">
-                    <svg viewBox="0 0 24 24" id="playIcon"><path d="M7 6v12l10-6z"></path></svg>
-                    <svg viewBox="0 0 24 24" id="pauseIcon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                    <svg viewBox="0 0 24 24" id="playIcon">
+                        <path d="M7 6v12l10-6z"></path>
+                    </svg>
+                    <svg viewBox="0 0 24 24" id="pauseIcon" style="display:none;">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                    </svg>
                 </button>
             </div>
             <div class="progress-container">
@@ -959,10 +1014,11 @@ A parte mais bonita da nossa canção
         if (!photoUrlValue || photoUrlValue === "" || photoUrlValue === "[[PHOTO" + "_URL]]") {
             document.body.classList.add('no-image');
             const thumb = document.getElementById('playerThumb');
-            if(thumb) thumb.style.display = 'none';
+            if (thumb) thumb.style.display = 'none';
         } else {
             document.body.classList.remove('no-image');
         }
     </script>
 </body>
+
 </html>
