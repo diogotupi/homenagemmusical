@@ -204,7 +204,7 @@ async function sendCustomerConfirmationEmail(order) {
       return false;
     }
     const info = await resend.emails.send({
-      from: "Homenagem Musical <contato@hmusical.com.br>",
+      from: "Homenagem Musical <noreply@hmusical.com.br>",
       to: order.cliente.email,
       subject,
       html,
@@ -259,7 +259,7 @@ async function sendOrderEmail(order) {
       return false;
     }
     const info = await resend.emails.send({
-      from: "Homenagem Musical <contato@hmusical.com.br>",
+      from: "Homenagem Musical <noreply@hmusical.com.br>",
       to: emailTo,
       subject,
       html,
@@ -404,7 +404,7 @@ app.post("/api/send-delivery-email", async (req, res) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Homenagem Musical <contato@hmusical.com.br>",
+      from: "Homenagem Musical <noreply@hmusical.com.br>",
       to: [email],
       subject: "Sua Homenagem Musical está pronta! ❤️",
       html: `
