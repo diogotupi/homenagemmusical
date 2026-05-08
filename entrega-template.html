@@ -384,6 +384,36 @@
             white-space: pre-wrap;
         }
 
+        /* No Image State */
+        body.no-image .album-cover,
+        body.no-image .now-playing img,
+        body.no-image .hero-actions,
+        body.no-image .page-overlay,
+        body.no-image .photo-tooltip {
+            display: none !important;
+        }
+
+        body.no-image .hero-section {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        body.no-image .hero-info {
+            max-width: 800px;
+        }
+
+        body.no-image .content-grid {
+            grid-template-columns: 1fr;
+            max-width: 800px;
+            margin: 40px auto;
+        }
+
+        body.no-image .now-playing {
+            width: auto;
+        }
+
         /* Custom Audio Player Styling */
         .player-bar {
             position: fixed;
@@ -714,6 +744,14 @@
 
         closeTooltip.addEventListener('click', dismissTooltip);
         pageOverlay.addEventListener('click', dismissTooltip);
+
+        // No Image Detection
+        const photoUrl = "[[PHOTO_URL]]";
+        if (!photoUrl || photoUrl === "" || photoUrl.includes("[[PHOTO_URL]]")) {
+            document.body.classList.add('no-image');
+            const thumb = document.getElementById('playerThumb');
+            if(thumb) thumb.style.display = 'none';
+        }
     </script>
 </body>
 </html>

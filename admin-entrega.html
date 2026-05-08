@@ -219,8 +219,17 @@
             </div>
 
             <div class="upload-section">
-                <label>Link da Foto (Cloudinary)</label>
-                <input type="text" name="photoUrl" placeholder="https://res.cloudinary.com/..." required style="margin-bottom: 20px;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="includeImage" checked style="width: 20px; height: 20px;">
+                        Incluir imagem de capa (Card A4)
+                    </label>
+                </div>
+
+                <div id="photoUrlGroup">
+                    <label>Link da Foto (Cloudinary)</label>
+                    <input type="text" name="photoUrl" placeholder="https://res.cloudinary.com/..." style="margin-bottom: 20px;">
+                </div>
 
                 <h3>Músicas (links do Cloudinary)</h3>
                 <div id="songsList">
@@ -266,6 +275,12 @@
         const resultArea = document.getElementById('resultArea');
         const deliveryLink = document.getElementById('deliveryLink');
         const downloadBtn = document.getElementById('downloadBtn');
+        const includeImage = document.getElementById('includeImage');
+        const photoUrlGroup = document.getElementById('photoUrlGroup');
+
+        includeImage.addEventListener('change', () => {
+            photoUrlGroup.style.display = includeImage.checked ? 'block' : 'none';
+        });
 
         form.onsubmit = async (e) => {
             e.preventDefault();
@@ -315,7 +330,7 @@
                 const clientName = formData.get('clientName');
                 const songTitle = formData.get('songTitle');
                 const lyrics = formData.get('lyrics');
-                const photoUrl = formData.get('photoUrl');
+                const photoUrl = includeImage.checked ? formData.get('photoUrl') : '';
                 const songNames = formData.getAll('songNames');
                 const songUrls = formData.getAll('songUrls');
 
