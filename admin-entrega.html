@@ -197,6 +197,9 @@
 <body>
 
     <div class="admin-card">
+        <footer>
+            <p>&copy; 2026 Homenagem Musical. Todos os direitos reservados.</p>
+        </footer>
         <header>
             <h1>Gerador de Entrega</h1>
             <p>Preencha os dados e suba os arquivos para criar a página do cliente.</p>
@@ -293,9 +296,19 @@
 
             try {
                 // 1. Send to server for dynamic URL
+                const dataToLink = {
+                    clientName: formData.get('clientName'),
+                    songTitle: formData.get('songTitle'),
+                    lyrics: formData.get('lyrics'),
+                    photoUrl: includeImage.checked ? formData.get('photoUrl') : '',
+                    songNames: formData.getAll('songNames'),
+                    songUrls: formData.getAll('songUrls')
+                };
+
                 const response = await fetch('/api/generate-delivery', {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToLink)
                 });
 
                 const data = await response.json();

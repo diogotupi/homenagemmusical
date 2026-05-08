@@ -338,7 +338,7 @@ app.post("/api/generate-delivery", async (req, res) => {
   try {
     const { clientName, songTitle, lyrics, photoUrl, songNames, songUrls } = req.body;
 
-    if (!clientName || !songTitle || !lyrics || !photoUrl || !songUrls) {
+    if (!clientName || !songTitle || !lyrics || !songUrls) {
       return res.status(400).json({ error: "Dados incompletos" });
     }
 

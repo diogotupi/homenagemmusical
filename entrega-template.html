@@ -430,18 +430,17 @@
             height: 90px;
         }
 
-        .now-playing {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            width: 30%;
+        .now-playing, .player-extra {
+            flex: 1;
+            min-width: 0;
         }
 
-        .now-playing img {
-            width: 56px;
-            height: 56px;
-            border-radius: 4px;
-            object-fit: cover;
+        .player-controls {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
         }
 
         .now-playing-info h4 {
@@ -452,15 +451,6 @@
         .now-playing-info p {
             font-size: 0.75rem;
             color: var(--text-subdued);
-        }
-
-        .player-controls {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            max-width: 500px;
         }
 
         .control-buttons {
@@ -609,7 +599,7 @@
         </div>
 
         <footer>
-            © 2024 Homenagem Musical • Feito com amor ❤️
+            <p>&copy; 2026 Homenagem Musical. Todos os direitos reservados.</p>
         </footer>
     </div>
 
