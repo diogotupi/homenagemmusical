@@ -154,6 +154,27 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
 
+        .btn-share {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--spotify-green);
+            color: #000;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 24px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-share:hover {
+            background: var(--spotify-green-hover);
+            transform: scale(1.05);
+        }
+
         /* Tooltip Style */
         .photo-tooltip {
             position: absolute;
@@ -631,7 +652,7 @@
         <div class="page-overlay" id="pageOverlay"></div>
         <header>
             <a href="/" class="logo">
-                <div class="logo-icon">H</div>
+                <div class="logo-icon">♪</div>
                 <span>Homenagem Musical</span>
             </a>
         </header>
@@ -655,6 +676,16 @@
                             </svg>
                             Baixar Foto
                         </a>
+
+                        <button class="btn-share" id="btnShare">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                <polyline points="16 6 12 2 8 6"></polyline>
+                                <line x1="12" y1="2" x2="12" y2="15"></line>
+                            </svg>
+                            Compartilhar
+                        </button>
 
                         <div class="photo-tooltip" id="photoTooltip">
                             <button class="tooltip-close" id="closeTooltip">&times;</button>
@@ -826,6 +857,29 @@
 
         closeTooltip.addEventListener('click', dismissTooltip);
         pageOverlay.addEventListener('click', dismissTooltip);
+
+        // Share Logic
+        const btnShare = document.getElementById('btnShare');
+        if (btnShare) {
+            btnShare.addEventListener('click', async () => {
+                const shareData = {
+                    title: document.title,
+                    text: 'Confira a homenagem musical personalizada que recebi! ❤️',
+                    url: window.location.href
+                };
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (err) {
+                        console.log('Error sharing:', err);
+                    }
+                } else {
+                    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.text + ' ' + shareData.url)}`;
+                    window.open(whatsappUrl, '_blank');
+                }
+            });
+        }
 
         // No Image Detection
         const photoUrlValue = "[[PHOTO_URL]]".trim();
