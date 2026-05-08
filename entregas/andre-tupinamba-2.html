@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua Música está pronta ❤️ | Homenagem Musical</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        :root {
+            --bg-base: #121212;
+            --bg-surface: #181818;
+            --bg-elevated: #282828;
+            --text-base: #ffffff;
+            --text-subdued: #b3b3b3;
+            --spotify-green: #1db954;
+            --spotify-green-hover: #1ed760;
+            --clay: #b94f37;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lexend Deca', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-base);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(180deg, rgba(185, 79, 55, 0.2) 0%, rgba(18, 18, 18, 1) 100%);
+        }
+
+        header {
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-base);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            background: var(--clay);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 40px 100px;
+            width: 100%;
+        }
+
+        .hero-section {
+            display: flex;
+            align-items: flex-end;
+            gap: 30px;
+            margin-bottom: 40px;
+            padding-top: 40px;
+        }
+
+        .album-cover {
+            width: 232px;
+            height: 232px;
+            min-width: 232px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            object-fit: cover;
+            background-color: #333;
+        }
+
+        .hero-info {
+            flex: 1;
+        }
+
+        .hero-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 6vw, 4.5rem);
+            font-weight: 800;
+            margin-bottom: 15px;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-base);
+        }
+
+        .hero-subtitle span {
+            color: var(--text-subdued);
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            margin-top: 24px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn-download-photo {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-base);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1001;
+            /* Above overlay */
+        }
+
+        .btn-download-photo:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-share {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--spotify-green);
+            color: #000;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 24px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-share:hover {
+            background: var(--spotify-green-hover);
+            transform: scale(1.05);
+        }
+
+        /* Tooltip Style */
+        .photo-tooltip {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            background: #ffffff;
+            color: #16120f;
+            padding: 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            width: 300px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            z-index: 1002;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 600px) {
+            .photo-tooltip {
+                left: 20px;
+                right: 20px;
+                width: calc(100% - 40px);
+                max-width: none;
+                top: 70px;
+                padding: 16px;
+                font-size: 0.85rem;
+                transform: translateY(10px);
+            }
+
+            .photo-tooltip.active {
+                transform: translateY(0);
+            }
+
+            .photo-tooltip::after {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+
+        .photo-tooltip.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .photo-tooltip::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 30px;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid var(--white);
+        }
+
+        /* Overlay Background */
+        .page-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .page-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .tooltip-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .tooltip-close:hover {
+            color: var(--clay);
+        }
+
+        .photo-tooltip p {
+            margin-bottom: 0;
+            font-weight: 400;
+        }
+
+        .photo-tooltip strong {
+            color: var(--clay);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 60px;
+            margin-top: 40px;
+        }
+
+        .playlist-section h3 {
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+
+        .song-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            gap: 16px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .song-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .song-index {
+            color: var(--text-subdued);
+            width: 20px;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        .song-details {
+            flex: 1;
+        }
+
+        .song-name {
+            font-weight: 600;
+            font-size: 1rem;
+            display: block;
+        }
+
+        .song-artist {
+            font-size: 0.85rem;
+            color: var(--text-subdued);
+        }
+
+        .play-btn-small {
+            background: none;
+            border: none;
+            color: var(--text-subdued);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .play-btn-small:hover {
+            color: var(--text-base);
+        }
+
+        .play-btn-small svg {
+            fill: currentColor;
+            width: 20px;
+            height: 20px;
+        }
+
+        .play-btn {
+            background: var(--spotify-green);
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-btn:hover {
+            background: var(--spotify-green-hover);
+            transform: scale(1.05);
+        }
+
+        .play-btn svg {
+            fill: #000;
+            width: 20px;
+            height: 20px;
+        }
+
+        .download-link {
+            color: var(--text-subdued);
+            text-decoration: none;
+            font-size: 0.8rem;
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s;
+        }
+
+        .download-link:hover {
+            color: var(--text-base);
+            border-color: var(--text-base);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .lyrics-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 32px;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lyrics-section h3 {
+            font-size: 1.2rem;
+            margin-bottom: 24px;
+            color: var(--text-subdued);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            flex-shrink: 0;
+        }
+
+        .lyrics-content {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
+            white-space: pre-wrap;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+        /* Custom Scrollbar for Lyrics */
+        .lyrics-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .lyrics-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .lyrics-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .lyrics-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* No Image State */
+        body.no-image .album-cover,
+        body.no-image .now-playing img,
+        body.no-image .hero-actions,
+        body.no-image .page-overlay,
+        body.no-image .photo-tooltip {
+            display: none !important;
+        }
+
+        body.no-image .hero-section {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        body.no-image .hero-info {
+            max-width: 800px;
+        }
+
+        body.no-image .content-grid {
+            grid-template-columns: 1fr;
+            max-width: 800px;
+            margin: 40px auto;
+        }
+
+        body.no-image .now-playing {
+            width: auto;
+        }
+
+        /* Custom Audio Player Styling */
+        .player-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #000;
+            border-top: 1px solid #282828;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            height: 90px;
+        }
+
+        .now-playing,
+        .player-extra {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .now-playing img {
+            width: 56px;
+            height: 56px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .player-controls {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .now-playing-info h4 {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .now-playing-info p {
+            font-size: 0.75rem;
+            color: var(--text-subdued);
+        }
+
+        .control-buttons {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .progress-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background: #4d4d4d;
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            position: absolute;
+            height: 100%;
+            background: var(--text-base);
+            border-radius: 2px;
+            width: 0%;
+        }
+
+        .progress-bar:hover .progress-fill {
+            background: var(--spotify-green);
+        }
+
+        .time {
+            font-size: 0.7rem;
+            color: var(--text-subdued);
+            min-width: 35px;
+        }
+
+        .volume-controls {
+            width: 30%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+        }
+
+        @media (max-width: 900px) {
+            .hero-section {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .player-bar {
+                padding: 10px 16px;
+                height: 110px;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .now-playing {
+                width: 100%;
+                margin-bottom: 10px;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .lyrics-section {
+                max-height: 400px;
+                padding: 24px;
+            }
+
+            header {
+                padding: 15px 20px;
+            }
+
+            .hero-section {
+                padding-top: 20px;
+                gap: 20px;
+            }
+
+            .volume-controls {
+                display: none;
+            }
+
+            .player-controls {
+                width: 100%;
+            }
+
+            .container {
+                padding: 10px 20px 120px;
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-subdued);
+            font-size: 0.8rem;
+            margin-bottom: 90px;
+        }
+
+        .expiration-banner {
+            background: rgba(0, 0, 0, 0.4);
+            color: rgba(255, 255, 255, 0.95);
+            text-align: center;
+            padding: 10px 20px;
+            font-size: 0.75rem;
+            font-weight: 400;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            letter-spacing: 0.02em;
+            position: relative;
+            z-index: 1100;
+            /* High enough to be above everything */
+        }
+
+        /* Hide native audio */
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-wrapper">
+        <div class="expiration-banner">Esta página ficará disponível até o dia 8 de Maio de 2027</div>
+        <div class="page-overlay" id="pageOverlay"></div>
+        <header>
+            <a href="/" class="logo">
+                <div class="logo-icon">♪</div>
+                <span>Homenagem Musical</span>
+            </a>
+        </header>
+
+        <div class="container">
+            <section class="hero-section">
+                <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778214514/hm-andre-tupinamba-sandra_giw6xl.png" alt="Capa" class="album-cover" id="mainPhoto">
+                <div class="hero-info">
+                    <p class="hero-badge">Homenagem Personalizada</p>
+                    <h1 class="hero-title" id="songTitle">Mama Sandra</h1>
+                    <p class="hero-subtitle">Homenagem Musical • <span>Sua música está pronta ❤️</span></p>
+
+                    <div class="hero-actions" style="position: relative;">
+                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778214514/hm-andre-tupinamba-sandra_giw6xl.png" download="homenagem_musical_foto" class="btn-download-photo"
+                            id="btnDownloadPhoto">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Baixar Foto
+                        </a>
+
+                        <button class="btn-share" id="btnShare">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                <polyline points="16 6 12 2 8 6"></polyline>
+                                <line x1="12" y1="2" x2="12" y2="15"></line>
+                            </svg>
+                            Compartilhar
+                        </button>
+
+                        <div class="photo-tooltip" id="photoTooltip">
+                            <button class="tooltip-close" id="closeTooltip">&times;</button>
+                            <strong>Dica especial ✨</strong>
+                            <p>Clique para baixar sua imagem e usar como quiser. Você pode imprimir, emoldurar e
+                                presentear. Escaneie o QR code da imagem para ouvir a sua música. 🙂 <br><br>Ah,
+                                lembrando, essa página fica online até o dia 8 de Maio de 2027</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="content-grid">
+                <div class="playlist-section">
+                    <h3>Versões da sua música</h3>
+                    <div class="songs-list" id="songsList">
+                        
+                            <div class="song-item">
+                                <div class="song-index">1</div>
+                                <div class="song-details">
+                                    <span class="song-name">v1</span>
+                                    <span class="song-artist">Homenagem Musical</span>
+                                </div>
+                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214152/Mama_Sandra_v1_itwh1w.mp3', 'v1')">
+                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
+                                </button>
+                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214152/Mama_Sandra_v1_itwh1w.mp3" download class="download-link">Baixar</a>
+                            </div>
+                        
+                            <div class="song-item">
+                                <div class="song-index">2</div>
+                                <div class="song-details">
+                                    <span class="song-name">v2</span>
+                                    <span class="song-artist">Homenagem Musical</span>
+                                </div>
+                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214192/Mama_Sandra_v2_wmnckp.mp3', 'v2')">
+                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
+                                </button>
+                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214192/Mama_Sandra_v2_wmnckp.mp3" download class="download-link">Baixar</a>
+                            </div>
+                        
+                            <div class="song-item">
+                                <div class="song-index">3</div>
+                                <div class="song-details">
+                                    <span class="song-name">v3</span>
+                                    <span class="song-artist">Homenagem Musical</span>
+                                </div>
+                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214153/Mama_Sandra_v3_vhslpm.mp3', 'v3')">
+                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
+                                </button>
+                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214153/Mama_Sandra_v3_vhslpm.mp3" download class="download-link">Baixar</a>
+                            </div>
+                        
+                            <div class="song-item">
+                                <div class="song-index">4</div>
+                                <div class="song-details">
+                                    <span class="song-name">v4</span>
+                                    <span class="song-artist">Homenagem Musical</span>
+                                </div>
+                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214164/Mama_Sandra_v4_sux8xe.mp3', 'v4')">
+                                    <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
+                                </button>
+                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778214164/Mama_Sandra_v4_sux8xe.mp3" download class="download-link">Baixar</a>
+                            </div>
+                        
+                    </div>
+                </div>
+
+                <div class="lyrics-side">
+                    <div class="lyrics-section">
+                        <h3>Letra</h3>
+                        <div class="lyrics-content" id="lyricsContent">Mama…
+É assim que a gente chama o amor
+A voz que acolhe, o cheiro bom da casa
+O abraço que cura qualquer dor
+Sandra, com teu coração gigante
+Sempre existe espaço ao teu redor
+Mesa cheia, risada alta
+E um carinho que vale mais que ouro
+
+Teu sangue italiano traz a força
+E essa forma linda de cuidar
+Transforma almoço em festa eterna
+E qualquer encontro em lar
+
+Quando a Mama chama os filhos pra perto
+Tudo fica leve outra vez
+Oh, Mama Sandra querida
+Rainha da nossa vida
+Guilherme, André e Bruno
+Te amam mais que tudo nesse mundo
+
+E os netinhos ao redor
+Fazem teu coração bater maior
+Andrezinho, Nicolly também
+Antonio, Katarina, Martina, meu bem
+
+Mama… teu amor é infinito
+É colo, é paz, é direção
+Você é a alma da família
+Batendo forte em cada coração
+
+E o Paôlo sempre ao teu lado
+Te seguindo pela casa sem parar
+Porque até ele sente esse amor bonito
+Que você nasceu pra espalhar
+
+Tem tanta vida dentro dos teus olhos
+Tanta história em cada refeição
+Cada filho leva um pedaço teu
+Guardado dentro do coração
+
+E quando a Mama reúne a família
+Até o tempo aprende a desacelerar
+
+Oh, Mama Sandra querida
+Rainha da nossa vida
+Guilherme, André e Bruno
+Te amam mais que tudo nesse mundo
+E os netinhos ao redor
+Fazem teu coração bater maior
+Andrezinho, Nicolly também
+Antonio, Katarina, Martina, meu bem
+Mama… teu amor é infinito
+É colo, é paz, é direção
+Você é a alma da família
+Batendo forte em cada coração
+
+Das raízes italianas veio tua força
+Da tua ternura nasceu nossa união
+Você é o vinho, o pão e a memória
+A canção mais bonita do nosso coração
+E quando alguém diz “Mama”…
+Tem amor em cada sílaba no ar
+
+Mama Sandra querida
+Nosso abrigo nessa vida
+Te celebramos hoje aqui
+Com todo amor que existe em nós
+Guilherme, André e Bruno
+Pra sempre vão te agradecer
+Por cada gesto, cada abraço
+Por ensinar a amar e viver
+
+Mama…
+Nossa casa tem teu nome
+Mama…
+Nosso amor também
+Mama Sandra…
+Pra sempre
+
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Homenagem Musical. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <!-- Global Player Bar -->
+    <div class="player-bar">
+        <div class="now-playing">
+            <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778214514/hm-andre-tupinamba-sandra_giw6xl.png" alt="Capa" id="playerThumb">
+            <div class="now-playing-info">
+                <h4 id="playerTitle">Selecione uma versão</h4>
+                <p id="playerArtist">Homenagem Musical</p>
+            </div>
+        </div>
+
+        <div class="player-controls">
+            <div class="control-buttons">
+                <button class="play-btn" id="masterPlayBtn">
+                    <svg viewBox="0 0 24 24" id="playIcon">
+                        <path d="M7 6v12l10-6z"></path>
+                    </svg>
+                    <svg viewBox="0 0 24 24" id="pauseIcon" style="display:none;">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="progress-container">
+                <span class="time" id="currentTime">0:00</span>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="time" id="durationTime">0:00</span>
+            </div>
+        </div>
+
+        <div class="volume-controls">
+            <!-- Space for future volume control -->
+        </div>
+    </div>
+
+    <audio id="globalAudio"></audio>
+
+    <script>
+        const audio = document.getElementById('globalAudio');
+        const masterPlayBtn = document.getElementById('masterPlayBtn');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const progressFill = document.getElementById('progressFill');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationTimeEl = document.getElementById('durationTime');
+        const playerTitle = document.getElementById('playerTitle');
+
+        let isPlaying = false;
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function playSong(url, name) {
+            if (audio.src !== window.location.origin + url && audio.src !== url) {
+                audio.src = url;
+                playerTitle.textContent = name;
+                audio.play();
+                isPlaying = true;
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+            } else {
+                if (isPlaying) {
+                    audio.pause();
+                    isPlaying = false;
+                    playIcon.style.display = 'block';
+                    pauseIcon.style.display = 'none';
+                } else {
+                    audio.play();
+                    isPlaying = true;
+                    playIcon.style.display = 'none';
+                    pauseIcon.style.display = 'block';
+                }
+            }
+        }
+
+        masterPlayBtn.addEventListener('click', () => {
+            if (!audio.src) return;
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+            } else {
+                audio.play();
+                isPlaying = true;
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+            }
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            const percent = (audio.currentTime / audio.duration) * 100;
+            progressFill.style.width = `${percent}%`;
+            currentTimeEl.textContent = formatTime(audio.currentTime);
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            durationTimeEl.textContent = formatTime(audio.duration);
+        });
+
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = pos * audio.duration;
+        });
+
+        audio.addEventListener('ended', () => {
+            isPlaying = false;
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            progressFill.style.width = '0%';
+        });
+
+        // Tooltip logic
+        const photoTooltip = document.getElementById('photoTooltip');
+        const closeTooltip = document.getElementById('closeTooltip');
+        const pageOverlay = document.getElementById('pageOverlay');
+
+        setTimeout(() => {
+            photoTooltip.classList.add('active');
+            pageOverlay.classList.add('active');
+        }, 2000);
+
+        const dismissTooltip = () => {
+            photoTooltip.classList.remove('active');
+            pageOverlay.classList.remove('active');
+        };
+
+        closeTooltip.addEventListener('click', dismissTooltip);
+        pageOverlay.addEventListener('click', dismissTooltip);
+
+        // Share Logic
+        const btnShare = document.getElementById('btnShare');
+        if (btnShare) {
+            btnShare.addEventListener('click', async () => {
+                const shareData = {
+                    title: document.title,
+                    text: 'Confira a homenagem musical personalizada que recebi! ❤️',
+                    url: window.location.href
+                };
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (err) {
+                        console.log('Error sharing:', err);
+                    }
+                } else {
+                    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.text + ' ' + shareData.url)}`;
+                    window.open(whatsappUrl, '_blank');
+                }
+            });
+        }
+
+        // No Image Detection
+        const photoUrlValue = "https://res.cloudinary.com/dc48hzb6b/image/upload/v1778214514/hm-andre-tupinamba-sandra_giw6xl.png".trim();
+        // Check if value is empty OR still contains the placeholder (meaning replacement failed)
+        if (!photoUrlValue || photoUrlValue === "" || photoUrlValue === "[[PHOTO" + "_URL]]") {
+            document.body.classList.add('no-image');
+            const thumb = document.getElementById('playerThumb');
+            if (thumb) thumb.style.display = 'none';
+        } else {
+            document.body.classList.remove('no-image');
+        }
+    </script>
+</body>
+
+</html>
