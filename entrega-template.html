@@ -366,6 +366,9 @@
             background: rgba(255,255,255,0.03);
             border-radius: 12px;
             padding: 32px;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
         }
 
         .lyrics-section h3 {
@@ -374,6 +377,7 @@
             color: var(--text-subdued);
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            flex-shrink: 0;
         }
 
         .lyrics-content {
@@ -382,6 +386,23 @@
             font-weight: 400;
             color: rgba(255,255,255,0.8);
             white-space: pre-wrap;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+        /* Custom Scrollbar for Lyrics */
+        .lyrics-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .lyrics-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .lyrics-content::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        .lyrics-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
         }
 
         /* No Image State */
