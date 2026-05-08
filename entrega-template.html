@@ -550,11 +550,15 @@
             margin-bottom: 90px;
         }
 
-        .expiration-note {
-            opacity: 0.7;
-            margin-bottom: 10px;
+        .expiration-banner {
+            background: rgba(185, 79, 55, 0.15);
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 8px 20px;
             font-size: 0.75rem;
             font-weight: 400;
+            border-bottom: 1px solid rgba(185, 79, 55, 0.2);
+            backdrop-filter: blur(10px);
         }
 
         /* Hide native audio */
@@ -565,6 +569,7 @@
 </head>
 <body>
     <div class="main-wrapper">
+        <div class="expiration-banner">[[EXPIRATION_MESSAGE]]</div>
         <div class="page-overlay" id="pageOverlay"></div>
         <header>
             <a href="/" class="logo">
@@ -616,7 +621,6 @@
         </div>
 
         <footer>
-            <p class="expiration-note">[[EXPIRATION_MESSAGE]]</p>
             <p>&copy; 2026 Homenagem Musical. Todos os direitos reservados.</p>
         </footer>
     </div>
