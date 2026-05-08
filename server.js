@@ -429,6 +429,7 @@ app.get("/entrega/:client", async (req, res) => {
     
     const expDate = data.expirationDate || getExpirationDate();
     template = template.replaceAll("[[EXPIRATION_MESSAGE]]", `Esta página ficará disponível até o dia ${expDate}`);
+    template = template.replaceAll("[[EXPIRATION_DATE]]", expDate);
 
     res.send(template);
   } catch (err) {
