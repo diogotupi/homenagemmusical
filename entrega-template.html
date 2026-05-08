@@ -736,11 +736,14 @@
         pageOverlay.addEventListener('click', dismissTooltip);
 
         // No Image Detection
-        const photoUrl = "[[PHOTO_URL]]";
-        if (!photoUrl || photoUrl === "" || photoUrl.includes("[[PHOTO_URL]]")) {
+        const photoUrlValue = "[[PHOTO_URL]]".trim();
+        // Check if value is empty OR still contains the placeholder (meaning replacement failed)
+        if (!photoUrlValue || photoUrlValue === "" || photoUrlValue === "[[PHOTO" + "_URL]]") {
             document.body.classList.add('no-image');
             const thumb = document.getElementById('playerThumb');
             if(thumb) thumb.style.display = 'none';
+        } else {
+            document.body.classList.remove('no-image');
         }
     </script>
 </body>

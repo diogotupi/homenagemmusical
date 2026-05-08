@@ -295,20 +295,22 @@
             const formData = new FormData(form);
 
             try {
-                // 1. Send to server for dynamic URL
-                const dataToLink = {
+                const finalPhotoUrl = includeImage.checked ? (formData.get('photoUrl') || '').trim() : '';
+                
+                const finalData = {
                     clientName: formData.get('clientName'),
                     songTitle: formData.get('songTitle'),
                     lyrics: formData.get('lyrics'),
-                    photoUrl: includeImage.checked ? formData.get('photoUrl') : '',
+                    photoUrl: finalPhotoUrl,
                     songNames: formData.getAll('songNames'),
                     songUrls: formData.getAll('songUrls')
                 };
 
+                // 1. Send to server for dynamic URL
                 const response = await fetch('/api/generate-delivery', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dataToLink)
+                    body: JSON.stringify(finalData)
                 });
 
                 const data = await response.json();
@@ -343,9 +345,19 @@
                 const clientName = formData.get('clientName');
                 const songTitle = formData.get('songTitle');
                 const lyrics = formData.get('lyrics');
-                const photoUrl = includeImage.checked ? formData.get('photoUrl') : '';
+                // Use the checkbox to decide if we send the photo URL
+                const finalPhotoUrl = includeImage.checked ? (formData.get('photoUrl') || '').trim() : '';
                 const songNames = formData.getAll('songNames');
                 const songUrls = formData.getAll('songUrls');
+
+                const dataToLink = {
+                    clientName,
+                    songTitle,
+                    lyrics,
+                    photoUrl: finalPhotoUrl,
+                    songNames,
+                    songUrls
+                };
 
                 let songsHtml = "";
                 songUrls.forEach((url, i) => {
