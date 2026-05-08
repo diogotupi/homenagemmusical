@@ -379,10 +379,16 @@
                     }
                 });
 
-                html = html.replaceAll("[[PHOTO_URL]]", photoUrl);
+                html = html.replaceAll("[[PHOTO_URL]]", finalPhotoUrl);
                 html = html.replaceAll("[[SONG_TITLE]]", songTitle);
                 html = html.replaceAll("[[LYRICS]]", lyrics);
                 html = html.replaceAll("[[SONGS_HTML]]", songsHtml);
+
+                const date = new Date();
+                date.setFullYear(date.getFullYear() + 1);
+                const monthNames = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+                const expDate = `${date.getDate()} de ${monthNames[date.getMonth()]} de ${date.getFullYear()}`;
+                html = html.replaceAll("[[EXPIRATION_MESSAGE]]", `Esta página ficará disponível até o dia ${expDate}`);
 
                 const blob = new Blob([html], { type: 'text/html' });
                 const downloadUrl = URL.createObjectURL(blob);

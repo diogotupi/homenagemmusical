@@ -115,6 +115,19 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function getExpirationDate() {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() + 1);
+  const day = date.getDate();
+  const monthNames = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+  ];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} de ${month} de ${year}`;
+}
+
 
 async function savePhoto(orderId, photo) {
   if (!photo || !photo.conteudo) {
@@ -349,6 +362,7 @@ app.post("/api/generate-delivery", async (req, res) => {
       songTitle,
       lyrics,
       photoUrl,
+      expirationDate: getExpirationDate(),
       songs: []
     };
 
@@ -412,6 +426,9 @@ app.get("/entrega/:client", async (req, res) => {
     template = template.replaceAll("[[SONG_TITLE]]", data.songTitle);
     template = template.replaceAll("[[LYRICS]]", data.lyrics);
     template = template.replaceAll("[[SONGS_HTML]]", songsHtml);
+    
+    const expDate = data.expirationDate || getExpirationDate();
+    template = template.replaceAll("[[EXPIRATION_MESSAGE]]", `Esta página ficará disponível até o dia ${expDate}`);
 
     res.send(template);
   } catch (err) {
