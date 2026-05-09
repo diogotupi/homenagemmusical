@@ -230,8 +230,14 @@
                 </div>
 
                 <div id="photoUrlGroup">
-                    <label>Link da Foto (Cloudinary)</label>
-                    <input type="text" name="photoUrl" placeholder="https://res.cloudinary.com/..." style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Foto Principal (A) - Cloudinary</label>
+                        <input type="text" name="photoUrl" placeholder="https://res.cloudinary.com/..." style="margin-bottom: 10px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Foto Secundária (B) - Opcional</label>
+                        <input type="text" name="photoUrlB" placeholder="https://res.cloudinary.com/..." style="margin-bottom: 20px;">
+                    </div>
                 </div>
 
                 <h3>Músicas (links do Cloudinary)</h3>
@@ -302,6 +308,7 @@
                     songTitle: formData.get('songTitle'),
                     lyrics: formData.get('lyrics'),
                     photoUrl: finalPhotoUrl,
+                    photoUrlB: formData.get('photoUrlB') || '',
                     songNames: formData.getAll('songNames'),
                     songUrls: formData.getAll('songUrls')
                 };
@@ -355,8 +362,9 @@
                     songTitle,
                     lyrics,
                     photoUrl: finalPhotoUrl,
-                    songNames,
-                    songUrls
+                    photoUrlB: formData.get('photoUrlB') || '',
+                    songNames: songNames,
+                    songUrls: songUrls
                 };
 
                 let songsHtml = "";
@@ -380,6 +388,8 @@
                 });
 
                 html = html.replaceAll("[[PHOTO_URL]]", finalPhotoUrl);
+                html = html.replaceAll("[[PHOTO_URL_B]]", formData.get('photoUrlB') || '');
+                html = html.replaceAll("[[HAS_SECOND_PHOTO_CLASS]]", formData.get('photoUrlB') ? 'has-two-photos' : '');
                 html = html.replaceAll("[[SONG_TITLE]]", songTitle);
                 html = html.replaceAll("[[LYRICS]]", lyrics);
                 html = html.replaceAll("[[SONGS_HTML]]", songsHtml);

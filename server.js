@@ -349,7 +349,7 @@ app.post("/create-checkout", async (req, res) => {
 // New Delivery Generation Endpoint (Saves JSON instead of HTML)
 app.post("/api/generate-delivery", async (req, res) => {
   try {
-    const { clientName, songTitle, lyrics, photoUrl, songNames, songUrls } = req.body;
+    const { clientName, songTitle, lyrics, photoUrl, photoUrlB, songNames, songUrls } = req.body;
 
     if (!clientName || !songTitle || !lyrics || !songUrls) {
       return res.status(400).json({ error: "Dados incompletos" });
@@ -362,6 +362,7 @@ app.post("/api/generate-delivery", async (req, res) => {
       songTitle,
       lyrics,
       photoUrl,
+      photoUrlB: photoUrlB || '',
       expirationDate: getExpirationDate(),
       songs: []
     };
@@ -489,6 +490,8 @@ app.get("/entrega/:client", async (req, res) => {
 
     // Replace Placeholders
     template = template.replaceAll("[[PHOTO_URL]]", data.photoUrl);
+    template = template.replaceAll("[[PHOTO_URL_B]]", data.photoUrlB || '');
+    template = template.replaceAll("[[HAS_SECOND_PHOTO_CLASS]]", data.photoUrlB ? 'has-two-photos' : '');
     template = template.replaceAll("[[SONG_TITLE]]", data.songTitle);
     template = template.replaceAll("[[LYRICS]]", data.lyrics);
     template = template.replaceAll("[[SONGS_HTML]]", songsHtml);
