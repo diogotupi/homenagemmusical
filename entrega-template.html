@@ -178,8 +178,13 @@
             display: flex;
         }
 
-        .slider-btn.prev { left: 8px; }
-        .slider-btn.next { right: 8px; }
+        .slider-btn.prev {
+            left: 8px;
+        }
+
+        .slider-btn.next {
+            right: 8px;
+        }
 
         @media (max-width: 600px) {
             .slider-btn {
@@ -755,7 +760,8 @@
                 <div class="photo-slider-wrapper [[HAS_SECOND_PHOTO_CLASS]]">
                     <div class="photo-slider" id="photoSlider">
                         <img src="[[PHOTO_URL]]" alt="Capa" class="album-cover" id="mainPhoto">
-                        <img src="[[PHOTO_URL_B]]" alt="Capa 2" class="album-cover" id="secondPhoto" style="display: [[PHOTO_URL_B]] ? 'block' : 'none'">
+                        <img src="[[PHOTO_URL_B]]" alt="Capa 2" class="album-cover" id="secondPhoto"
+                            style="display: [[PHOTO_URL_B]] ? 'block' : 'none'">
                     </div>
                     <div class="slider-dots">
                         <span class="dot active" data-index="0"></span>
