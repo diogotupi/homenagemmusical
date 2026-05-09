@@ -972,6 +972,17 @@ select option {
   color: rgba(22, 18, 15, 0.76);
 }
 
+.music-playground__loading .music-playground__loading-warn {
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: #7a3428;
+  letter-spacing: 0.01em;
+}
+
+.music-playground__loading .music-playground__loading-warn strong {
+  font-weight: 900;
+}
+
 .music-playground__loading .music-playground__loading-hint {
   font-size: 0.95rem;
   font-weight: 600;
