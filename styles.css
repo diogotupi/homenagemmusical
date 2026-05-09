@@ -801,6 +801,11 @@ select option {
   width: min(1180px, calc(100% - 32px));
 }
 
+/* Logo após o hero: menos espaço em cima para o scroll “sentir” o gerador em seguida */
+.section.music-playground.music-playground--hero-follow {
+  margin-top: clamp(28px, 4vw, 44px);
+}
+
 .music-playground__wrap {
   max-width: min(960px, 100%);
   margin: 0 auto;

@@ -51,6 +51,93 @@
       </div>
     </section>
 
+    <section class="section music-playground music-playground--hero-follow" id="gerador-instantaneo"
+      aria-labelledby="playground-title">
+      <div class="music-playground__wrap">
+        <header class="music-playground__head section-heading">
+          <p class="section-kicker">Gerador IA</p>
+          <h2 id="playground-title">Geração instantânea</h2>
+          <p class="music-playground__lead">
+            Escreva o que você imagina para a música. A letra será criada pela IA com base na sua história.
+          </p>
+          <p class="music-playground__lead-tip" role="note">
+            <strong>Tome um tempo aqui:</strong> escreva o máximo que puder <strong>e não esqueça de dizer o estilo</strong>.
+          </p>
+        </header>
+
+        <div class="music-playground__card">
+          <p class="music-playground__card-kicker">Geração de música</p>
+
+          <form id="aiGeneratorForm" class="music-playground__form">
+            <div class="music-playground__field">
+              <label for="promptHistoria">Descrição para a música</label>
+              <textarea id="promptHistoria" name="descricao" maxlength="500" rows="8" required spellcheck="true"
+                placeholder="Exemplo: Dona Maria conheceu José em um baile no interior e viveram juntos por 42 anos. Ela adorava fazer o cabelo no salão da Dona Célia toda sexta-feira e nunca deixava faltar lasanha nos almoços de domingo com os netos. Música emocionante sobre amor simples, família e saudade. Estilo: sertanejo romântico moderno com vocal feminino."></textarea>
+            </div>
+
+            <button type="submit" class="button primary music-playground__submit" id="btnGerarIA">Gerar música</button>
+          </form>
+        </div>
+
+        <div id="aiLoading" class="music-playground__loading" hidden role="status" aria-live="polite">
+          <div class="music-playground__spinner" aria-hidden="true"></div>
+          <div class="music-playground__loading-copy">
+            <p>Produzindo sua música! aguarde um pouquinho 😊</p>
+            <p class="music-playground__loading-warn"><strong>Não feche essa página.</strong></p>
+            <p class="music-playground__loading-hint"><strong>pode demorar de 1 a 3 minutos.</strong></p>
+          </div>
+        </div>
+
+        <div id="aiResultArea" class="music-playground__result" style="display: none;">
+          <p id="dualPreviewSubtitle" class="music-playground__result-note"></p>
+
+          <div class="dual-preview" id="dualPreviewGrid">
+            <div class="dual-preview__col">
+              <article class="modern-player-card modern-player-card--a" id="wrapPlayerV1">
+                <div class="modern-player-card__ribbon">
+                  <span class="preview-badge">Preview 50%</span>
+                  <span class="modern-player-card__badge-label">Versão 1</span>
+                </div>
+                <h3 class="modern-player-card__title" id="aiSongTitleV1"></h3>
+                <audio id="aiPreviewAudioV1" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
+                <div class="modern-player-card__row">
+                  <button type="button" id="btnPlayIAV1" class="modern-player-card__play" aria-label="Tocar ou pausar">▶</button>
+                  <div class="modern-player-card__seek" data-player="v1" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo do preview versão 1">
+                    <div class="modern-player-card__seek-bg"></div>
+                    <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v1"></div>
+                  </div>
+                </div>
+                <p class="modern-player-card__footnote">Ouça gratuitamente até a metade. Clique ou arraste na linha para adiantar no preview.</p>
+              </article>
+            </div>
+            <div class="dual-preview__col">
+              <article class="modern-player-card modern-player-card--b modern-player-card--v2" id="wrapPlayerV2">
+                <div class="modern-player-card__ribbon">
+                  <span class="preview-badge">Preview 50%</span>
+                  <span class="modern-player-card__badge-label">Versão 2</span>
+                </div>
+                <h3 class="modern-player-card__title" id="aiSongTitleV2"></h3>
+                <audio id="aiPreviewAudioV2" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
+                <div class="modern-player-card__row">
+                  <button type="button" id="btnPlayIAV2" class="modern-player-card__play" aria-label="Tocar ou pausar">▶</button>
+                  <div class="modern-player-card__seek" data-player="v2" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo do preview versão 2">
+                    <div class="modern-player-card__seek-bg"></div>
+                    <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v2"></div>
+                  </div>
+                </div>
+                <p class="modern-player-card__footnote">Outra direção criativa para o mesmo texto base.</p>
+              </article>
+            </div>
+          </div>
+
+          <button class="music-playground__cta music-playground__buy" id="btnComprarIA" type="button">
+            <span class="music-playground__cta-main">Fazer o download</span>
+            <span class="music-playground__cta-sub">Das duas versões em MP3 completas · <strong>R$ 19,00</strong></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <section class="marquee" aria-label="Tipos de música">
       <div class="marquee-content">
         <span>Casamentos</span>
@@ -142,92 +229,6 @@
         <div><strong>Melodia original</strong><span>Direcionada para o clima que você quer provocar.</span></div>
         <div><strong>Arquivo final</strong><span>Entrega em MP3 para enviar, tocar ou guardar.</span></div>
         <div><strong>Toque humano</strong><span>Curadoria criativa para evitar uma música genérica.</span></div>
-      </div>
-    </section>
-
-    <section class="section music-playground" id="gerador-instantaneo" aria-labelledby="playground-title">
-      <div class="music-playground__wrap">
-        <header class="music-playground__head section-heading">
-          <p class="section-kicker">Gerador IA</p>
-          <h2 id="playground-title">Geração instantânea</h2>
-          <p class="music-playground__lead">
-            Escreva o que você imagina para a música. A letra será criada pela IA com base na sua história.
-          </p>
-          <p class="music-playground__lead-tip" role="note">
-            <strong>Tome um tempo aqui:</strong> escreva o máximo que puder <strong>e não esqueça de dizer o estilo</strong>.
-          </p>
-        </header>
-
-        <div class="music-playground__card">
-          <p class="music-playground__card-kicker">Geração de música</p>
-
-          <form id="aiGeneratorForm" class="music-playground__form">
-            <div class="music-playground__field">
-              <label for="promptHistoria">Descrição para a música</label>
-              <textarea id="promptHistoria" name="descricao" maxlength="500" rows="8" required spellcheck="true"
-                placeholder="Exemplo: Dona Maria conheceu José em um baile no interior e viveram juntos por 42 anos. Ela adorava fazer o cabelo no salão da Dona Célia toda sexta-feira e nunca deixava faltar lasanha nos almoços de domingo com os netos. Música emocionante sobre amor simples, família e saudade. Estilo: sertanejo romântico moderno com vocal feminino."></textarea>
-            </div>
-
-            <button type="submit" class="button primary music-playground__submit" id="btnGerarIA">Gerar música</button>
-          </form>
-        </div>
-
-        <div id="aiLoading" class="music-playground__loading" hidden role="status" aria-live="polite">
-          <div class="music-playground__spinner" aria-hidden="true"></div>
-          <div class="music-playground__loading-copy">
-            <p>Produzindo sua música! aguarde um pouquinho 😊</p>
-            <p class="music-playground__loading-warn"><strong>Não feche essa página.</strong></p>
-            <p class="music-playground__loading-hint"><strong>pode demorar de 1 a 3 minutos.</strong></p>
-          </div>
-        </div>
-
-        <div id="aiResultArea" class="music-playground__result" style="display: none;">
-          <p id="dualPreviewSubtitle" class="music-playground__result-note"></p>
-
-          <div class="dual-preview" id="dualPreviewGrid">
-            <div class="dual-preview__col">
-              <article class="modern-player-card modern-player-card--a" id="wrapPlayerV1">
-                <div class="modern-player-card__ribbon">
-                  <span class="preview-badge">Preview 50%</span>
-                  <span class="modern-player-card__badge-label">Versão 1</span>
-                </div>
-                <h3 class="modern-player-card__title" id="aiSongTitleV1"></h3>
-                <audio id="aiPreviewAudioV1" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
-                <div class="modern-player-card__row">
-                  <button type="button" id="btnPlayIAV1" class="modern-player-card__play" aria-label="Tocar ou pausar">▶</button>
-                  <div class="modern-player-card__seek" data-player="v1" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo do preview versão 1">
-                    <div class="modern-player-card__seek-bg"></div>
-                    <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v1"></div>
-                  </div>
-                </div>
-                <p class="modern-player-card__footnote">Ouça gratuitamente até a metade. Clique ou arraste na linha para adiantar no preview.</p>
-              </article>
-            </div>
-            <div class="dual-preview__col">
-              <article class="modern-player-card modern-player-card--b modern-player-card--v2" id="wrapPlayerV2">
-                <div class="modern-player-card__ribbon">
-                  <span class="preview-badge">Preview 50%</span>
-                  <span class="modern-player-card__badge-label">Versão 2</span>
-                </div>
-                <h3 class="modern-player-card__title" id="aiSongTitleV2"></h3>
-                <audio id="aiPreviewAudioV2" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
-                <div class="modern-player-card__row">
-                  <button type="button" id="btnPlayIAV2" class="modern-player-card__play" aria-label="Tocar ou pausar">▶</button>
-                  <div class="modern-player-card__seek" data-player="v2" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo do preview versão 2">
-                    <div class="modern-player-card__seek-bg"></div>
-                    <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v2"></div>
-                  </div>
-                </div>
-                <p class="modern-player-card__footnote">Outra direção criativa para o mesmo texto base.</p>
-              </article>
-            </div>
-          </div>
-
-          <button class="music-playground__cta music-playground__buy" id="btnComprarIA" type="button">
-            <span class="music-playground__cta-main">Fazer o download</span>
-            <span class="music-playground__cta-sub">Das duas versões em MP3 completas · <strong>R$ 19,00</strong></span>
-          </button>
-        </div>
       </div>
     </section>
 
