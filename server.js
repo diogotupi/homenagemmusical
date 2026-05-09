@@ -12,6 +12,7 @@ import fileUpload from "express-fileupload";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors());
 app.use(fileUpload());
 
@@ -74,21 +75,28 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 if (!resend) {
   console.warn("AVISO: RESEND_API_KEY não encontrada. O envio de e-mails não funcionará.");
 }
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+if (!stripe) {
+  console.warn("AVISO: STRIPE_SECRET_KEY não encontrada. O checkout não funcionará.");
+}
 const ordersDir = path.resolve("pedidos");
 const uploadsDir = path.join(ordersDir, "uploads");
 const emailTo = process.env.EMAIL_TO || "diogotupi09@gmail.com";
 const deliveriesDataDir = path.join(ordersDir, "entregas");
-
+const instantSongsDir = path.join(ordersDir, "instant-songs");
+const instantGenIpCountsPath = path.join(ordersDir, "instant-gen-ip-counts.json");
+const instantGenLimitParsed = Number.parseInt(process.env.INSTANT_FREE_GEN_LIMIT ?? "3", 10);
+const INSTANT_GEN_LIMIT_IP =
+  Number.isFinite(instantGenLimitParsed) && instantGenLimitParsed > 0 ? instantGenLimitParsed : 3;
 
 const prices = {
-  essencial: 4900,
+  essencial: 1900,
   "mais-escolhido": 6900,
   premium: 7900,
 };
 
 const planNames = {
-  essencial: "Essencial",
+  essencial: "Essencial (Instantâneo)",
   "mais-escolhido": "Mais escolhido",
   premium: "Premium",
 };
@@ -106,6 +114,188 @@ function cleanText(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+async function saveInstantSongRecord(songId, payload) {
+  await mkdir(instantSongsDir, { recursive: true });
+  await writeFile(
+    path.join(instantSongsDir, `${songId}.json`),
+    JSON.stringify(payload, null, 2),
+    "utf8"
+  );
+}
+
+async function loadInstantSongRecord(songId) {
+  try {
+    const raw = await readFile(path.join(instantSongsDir, `${songId}.json`), "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function instantTitleFromHistoria(historia) {
+  const line = cleanText(historia).split(/\n/u)[0] || "Sua música";
+  return line.length > 100 ? `${line.slice(0, 97)}…` : line;
+}
+
+function normalizeClientIp(raw) {
+  if (!raw || typeof raw !== "string") return "unknown";
+  const t = raw.trim();
+  if (t.startsWith("::ffff:")) return t.slice(7).trim();
+  return t;
+}
+
+/** IP do pedido HTTP (honra proxy com trust proxy já ativado). */
+function getInstantRequestIp(req) {
+  const xffRaw = req.headers?.["x-forwarded-for"];
+  const xff = typeof xffRaw === "string" ? xffRaw.split(",")[0] : "";
+  const fromSocket = normalizeClientIp(req.socket?.remoteAddress || "");
+  const fromForwarded = normalizeClientIp(xff);
+  return fromForwarded || fromSocket || "unknown";
+}
+
+async function readInstantGenerationCountsByIp() {
+  try {
+    const raw = await readFile(instantGenIpCountsPath, "utf8");
+    const j = JSON.parse(raw);
+    const c = j?.counts && typeof j.counts === "object" ? j.counts : {};
+    return c;
+  } catch {
+    return {};
+  }
+}
+
+async function incrementInstantGenerationForIp(ip) {
+  await mkdir(ordersDir, { recursive: true });
+  const counts = await readInstantGenerationCountsByIp();
+  counts[ip] = (counts[ip] || 0) + 1;
+  await writeFile(instantGenIpCountsPath, JSON.stringify({ counts }, null, 2), "utf8");
+}
+
+/** Faixas em `response.sunoData[]`: `audioUrl` / snake_case compat. */
+function sunoTracksFromPayload(data) {
+  const resp = data?.response;
+  const list =
+    Array.isArray(resp?.sunoData)
+      ? resp.sunoData
+      : Array.isArray(resp?.data)
+        ? resp.data
+        : [];
+  /** @type {{ audioUrl: string, title: string }[]} */
+  const out = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue;
+    const url =
+      typeof item.audioUrl === "string" && item.audioUrl.trim()
+        ? item.audioUrl.trim()
+        : typeof item.audio_url === "string" && item.audio_url.trim()
+          ? item.audio_url.trim()
+          : typeof item.streamAudioUrl === "string" && item.streamAudioUrl.trim()
+            ? item.streamAudioUrl.trim()
+            : "";
+    if (!url) continue;
+    out.push({
+      audioUrl: url,
+      title: typeof item.title === "string" ? cleanText(item.title) : "",
+    });
+  }
+  return out.slice(0, 2);
+}
+
+/** No modo não-custom, até 2 faixas por tarefa. Esperamos SUCCESS para recuperar todas. */
+const SUNO_SIMPLE_PROMPT_MAX = 500;
+
+async function pollSunoUntilSuccessTracks(taskId, apiKey) {
+  const base = cleanText(process.env.SUNO_API_BASE) || "https://api.sunoapi.org";
+  const maxMs = 8 * 60 * 1000;
+  const start = Date.now();
+  const headers = { Authorization: `Bearer ${apiKey}` };
+
+  const failStatuses = new Set([
+    "FAILED",
+    "ERROR",
+    "CREATE_TASK_FAILED",
+    "GENERATE_AUDIO_FAILED",
+    "CALLBACK_EXCEPTION",
+    "SENSITIVE_WORD_ERROR",
+  ]);
+
+  while (Date.now() - start < maxMs) {
+    await new Promise((r) => setTimeout(r, 6000));
+    const resp = await fetch(
+      `${base}/api/v1/generate/record-info?taskId=${encodeURIComponent(taskId)}`,
+      { headers },
+    );
+    const json = await resp.json();
+    if (json.code !== 200) {
+      throw new Error(json.msg || "suno_status_error");
+    }
+    const payload = json.data;
+    const status = payload?.status;
+
+    if (failStatuses.has(status)) {
+      throw new Error(
+        `suno_failed:${status}:${payload?.errorMessage || payload?.errorCode || ""}`,
+      );
+    }
+
+    if (status === "SUCCESS") {
+      const tracks = sunoTracksFromPayload(payload);
+      if (!tracks.length) {
+        console.warn("[Suno] SUCCESS sem faixas; response keys:", payload?.response && Object.keys(payload.response));
+        throw new Error("suno_no_audio");
+      }
+      return tracks;
+    }
+  }
+
+  throw new Error("suno_timeout");
+}
+
+async function generateWithSuno(descricaoCliente) {
+  const apiKey = cleanText(process.env.SUNO_API_KEY);
+  if (!apiKey) return null;
+
+  const base = cleanText(process.env.SUNO_API_BASE) || "https://api.sunoapi.org";
+  const callBackUrl =
+    cleanText(process.env.SUNO_CALLBACK_URL) ||
+    `${cleanText(process.env.PUBLIC_SITE_URL) || "https://hmusical.com.br"}/api/suno-callback-ignore`;
+  /** V5_5 conforme lista da API (_ não ponto na string do modelo). */
+  const model = cleanText(process.env.SUNO_MODEL) || "V5_5";
+  const prompt = cleanText(descricaoCliente).slice(0, SUNO_SIMPLE_PROMPT_MAX);
+
+  /*
+   * customMode DESLIGADO: a documentação diz que a letra é gerada pela IA com base na ideia,
+   * e não cantada literalmente como acontecia em customMode (prompt = letra fixa).
+   * Limite 500 caracteres exigido nesse modo.
+   */
+  const genResp = await fetch(`${base}/api/v1/generate`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      prompt,
+      customMode: false,
+      instrumental: false,
+      model,
+      callBackUrl,
+    }),
+  });
+
+  const genJson = await genResp.json();
+  if (genJson.code !== 200 || !genJson.data?.taskId) {
+    throw new Error(genJson.msg || "suno_generate_failed");
+  }
+
+  const tracks = await pollSunoUntilSuccessTracks(genJson.data.taskId, apiKey);
+  const fallbackTitle = instantTitleFromHistoria(descricaoCliente).slice(0, 100);
+  return tracks.map((t, i) => ({
+    audioUrl: t.audioUrl,
+    title: cleanText(t.title) || `${fallbackTitle} · v${i + 1}`,
+  }));
+}
+
 function escapeHtml(value) {
   return cleanText(value)
     .replaceAll("&", "&amp;")
@@ -113,6 +303,17 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function safePublicHttpUrl(raw) {
+  if (typeof raw !== "string") return "";
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
+  } catch {
+    /* URL inválida */
+  }
+  return "";
 }
 
 function getExpirationDate() {
@@ -157,8 +358,59 @@ async function savePhoto(orderId, photo) {
 
 async function sendCustomerConfirmationEmail(order) {
   if (!order.cliente.email) return false;
+  const isInstant = order.tipoPedido === "instantaneo" && order.instantSong?.fullUrl;
 
-  const subject = `Obra em produção! ❤️ Recebemos seu pedido na Homenagem Musical`;
+  const subject = isInstant
+    ? `Download liberado! 🎵 Sua música está pronta — Homenagem Musical`
+    : `Obra em produção! ❤️ Recebemos seu pedido na Homenagem Musical`;
+
+  if (isInstant) {
+    if (/^pendente@/iu.test(order.cliente.email || "")) {
+      return false;
+    }
+    const dl = safePublicHttpUrl(order.instantSong.fullUrl);
+    const dl2 = safePublicHttpUrl(order.instantSong.fullUrlB || "");
+    if (!dl) return false;
+    const secondBtn =
+      dl2 && dl2 !== dl
+        ? `
+      <p style="text-align:center; margin: 12px 0 0;">
+        <a href="${escapeHtml(dl2)}" style="display:inline-block; background:#0f766e; color:#fff; padding:15px 25px; text-decoration:none; border-radius:8px; font-weight:bold;">
+          Baixar Versão 2 (MP3)
+        </a>
+      </p>`
+        : "";
+    const htmlInstant = `
+    <div style="font-family: sans-serif; line-height: 1.6; color: #16120f; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+      <div style="text-align: center; margin-bottom: 20px;">
+         <div style="background: #b94f37; color: white; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; display: inline-block; font-weight: bold; font-size: 20px;">H</div>
+         <h2 style="margin-top: 10px;">Homenagem Musical</h2>
+      </div>
+      <h1 style="color: #b94f37; text-align: center;">Obrigado pela compra! ❤️</h1>
+      <p>Olá, <strong>${escapeHtml(order.cliente.nome)}</strong>!</p>
+      <p>O pagamento foi confirmado. Seu pacote inclui as duas versões geradas. Use o mesmo link da página após o checkout ou baixe abaixo.</p>
+      <p style="text-align:center; margin: 28px 0 0;">
+        <a href="${escapeHtml(dl)}" style="display:inline-block; background:#b94f37; color:#fff; padding:15px 25px; text-decoration:none; border-radius:8px; font-weight:bold;">
+          Baixar Versão 1 (MP3)
+        </a>
+      </p>${secondBtn}
+      <p style="font-size: 13px; color: #555;">Guarde os arquivos no seu celular ou computador. Os provedores externos podem expirar links após algum tempo.</p>
+    </div>`;
+    try {
+      if (!resend) return false;
+      const info = await resend.emails.send({
+        from: "Homenagem Musical <noreply@hmusical.com.br>",
+        to: order.cliente.email,
+        subject,
+        html: htmlInstant,
+      });
+      console.log("CONFIRMAÇÃO INSTANTÂNEO:", info);
+      return true;
+    } catch (err) {
+      console.error("Erro ao enviar confirmação instantânea:", err);
+      return false;
+    }
+  }
 
   const html = `
     <div style="font-family: sans-serif; line-height: 1.6; color: #16120f; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
@@ -235,6 +487,16 @@ async function sendOrderEmail(order) {
     <p><strong>Estilo:</strong> ${escapeHtml(order.detalhes.estilo)}</p>
     <p><strong>História:</strong></p>
     <p>${escapeHtml(order.detalhes.historia).replaceAll("\n", "<br />")}</p>
+    ${
+      order.instantSong?.fullUrl
+        ? `<p><strong>Versão 1 (MP3):</strong> ${escapeHtml(safePublicHttpUrl(order.instantSong.fullUrl) ? order.instantSong.fullUrl : "URL inválida")}</p>`
+        : ""
+    }
+    ${
+      order.instantSong?.fullUrlB
+        ? `<p><strong>Versão 2 (MP3):</strong> ${escapeHtml(safePublicHttpUrl(order.instantSong.fullUrlB) ? order.instantSong.fullUrlB : "")}</p>`
+        : ""
+    }
     <p>${order.foto ? "A foto foi enviada em anexo." : "Sem foto anexada."}</p>
   `;
 
@@ -304,7 +566,7 @@ app.post("/create-checkout", async (req, res) => {
           quantity: 1
         }
       ],
-      success_url: `${siteUrl}/sucesso.html`,
+      success_url: req.body.redirectUrl || `${siteUrl}/sucesso.html`,
       cancel_url: `${siteUrl}/cancelado.html`,
       metadata: {
         orderId,
@@ -343,6 +605,254 @@ app.post("/create-checkout", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erro ao criar checkout" });
+  }
+});
+
+/** Checkout apenas para fluxo instantâneo (gerador IA + R$ 19); exige música já gerada no servidor */
+app.post("/create-checkout-session", async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: "Pagamentos indisponíveis." });
+  }
+
+  const plan = cleanText(req.body?.plan);
+  const clientData = req.body?.clientData || {};
+  const redirectUrlRaw = cleanText(req.body?.redirectUrl);
+  const instantSong = req.body?.instantSong || {};
+
+  if (plan !== "essencial") {
+    return res.status(400).json({ error: "Plano inválido para esta sessão." });
+  }
+
+  const songId = cleanText(instantSong.songId);
+  const fullUrlPassed = safePublicHttpUrl(instantSong.fullUrl);
+  const fullUrlPassedB = safePublicHttpUrl(instantSong.fullUrlB);
+  if (!songId || !fullUrlPassed) {
+    return res.status(400).json({ error: "Dados da música incompletos. Gere uma preview primeiro." });
+  }
+
+  const disk = await loadInstantSongRecord(songId);
+  const diskU0 =
+    disk?.tracks?.[0]?.audioUrl && safePublicHttpUrl(disk.tracks[0].audioUrl)
+      ? disk.tracks[0].audioUrl
+      : safePublicHttpUrl(disk?.fullUrl)
+        ? disk.fullUrl
+        : "";
+  const diskU1 =
+    disk?.tracks?.[1]?.audioUrl && safePublicHttpUrl(disk.tracks[1].audioUrl)
+      ? disk.tracks[1].audioUrl
+      : safePublicHttpUrl(disk?.fullUrlB ?? "")
+        ? disk.fullUrlB
+        : null;
+
+  if (!diskU0) {
+    return res.status(400).json({ error: "Música não encontrada no servidor. Gere a preview novamente." });
+  }
+  if (safePublicHttpUrl(diskU0) !== fullUrlPassed) {
+    return res.status(400).json({ error: "A preview não confere com o servidor. Atualize a página e gere de novo." });
+  }
+  if (diskU1) {
+    if (!fullUrlPassedB) {
+      return res.status(400).json({ error: "Falta dados da segunda versão. Recarregue e gere novamente." });
+    }
+    if (safePublicHttpUrl(diskU1) !== fullUrlPassedB) {
+      return res.status(400).json({ error: "A segunda faixa não confere com o servidor. Gere de novo." });
+    }
+  }
+
+  const resolvedFullUrl = diskU0;
+  const resolvedSecondUrl = diskU1 || null;
+  const titleFromDisk = cleanText(disk.title);
+
+  const pacote = "essencial";
+
+  try {
+    await mkdir(ordersDir, { recursive: true });
+
+    const orderId = randomUUID();
+    const originBase = (
+      req.headers.origin ||
+      cleanText(process.env.PUBLIC_SITE_URL) ||
+      "http://localhost:3000"
+    ).replace(/\/$/, "");
+
+    let successTarget = redirectUrlRaw;
+    if (!successTarget) {
+      return res.status(400).json({ error: "URL de retorno obrigatória." });
+    }
+    if (!/^https?:\/\//iu.test(successTarget)) {
+      successTarget = successTarget.startsWith("/")
+        ? `${originBase}${successTarget}`
+        : `${originBase}/${successTarget}`;
+    }
+    const successUrl = successTarget.includes("?")
+      ? `${successTarget}&session_id={CHECKOUT_SESSION_ID}`
+      : `${successTarget}?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelTarget = `${originBase}/cancelado.html`;
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      allow_promotion_codes: true,
+      line_items: [
+        {
+          price_data: {
+            currency: "brl",
+            product_data: {
+              name: `${planNames[pacote]}${
+                resolvedSecondUrl && resolvedSecondUrl !== resolvedFullUrl
+                  ? ` · 2 versões MP3`
+                  : ` · MP3`
+              }`,
+            },
+            unit_amount: prices[pacote],
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: successUrl,
+      cancel_url: cancelTarget,
+      metadata: { orderId },
+    });
+
+    const order = {
+      id: orderId,
+      criadoEm: new Date().toISOString(),
+      stripeSessionId: session.id,
+      status: "checkout_criado",
+      tipoPedido: "instantaneo",
+      pacote,
+      plano: planNames[pacote],
+      valorCentavos: prices[pacote],
+      cliente: {
+        nome: cleanText(clientData.nome),
+        whatsapp: cleanText(clientData.whatsapp),
+        email: cleanText(clientData.email),
+      },
+      detalhes: {
+        ocasiao: cleanText(clientData.ocasiao),
+        estilo: cleanText(clientData.estilo),
+        historia: cleanText(clientData.historia),
+      },
+      foto: null,
+      instantSong: {
+        songId,
+        fullUrl: resolvedFullUrl,
+        fullUrlB: resolvedSecondUrl,
+        tracks:
+          disk.tracks?.length
+            ? disk.tracks.map((row) => ({
+                label: cleanText(row.label) || "Versão",
+                audioUrl: safePublicHttpUrl(row.audioUrl) ? row.audioUrl : "",
+                title: cleanText(row.title || ""),
+              }))
+            : [
+                {
+                  label: "Versão 1",
+                  audioUrl: resolvedFullUrl,
+                  title: titleFromDisk,
+                },
+                ...(resolvedSecondUrl
+                  ? [
+                      {
+                        label: "Versão 2",
+                        audioUrl: resolvedSecondUrl,
+                        title: titleFromDisk,
+                      },
+                    ]
+                  : []),
+              ],
+        title:
+          titleFromDisk ||
+          cleanText(instantSong.title) ||
+          instantTitleFromHistoria(clientData.historia || ""),
+      },
+    };
+
+    await writeFile(
+      path.join(ordersDir, `${orderId}.json`),
+      JSON.stringify(order, null, 2),
+      "utf8",
+    );
+
+    res.json({ url: session.url, orderId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao criar sessão de pagamento." });
+  }
+});
+
+app.get("/api/instant-paid-download", async (req, res) => {
+  const sessionId = typeof req.query.session_id === "string" ? req.query.session_id.trim() : "";
+  if (!sessionId || !stripe) {
+    return res.status(400).json({ error: "Sessão inválida." });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status !== "paid") {
+      return res.status(403).json({ error: "Pagamento ainda não confirmado." });
+    }
+
+    const orderId = typeof session.metadata?.orderId === "string" ? session.metadata.orderId : "";
+    if (!orderId) {
+      return res.status(404).json({ error: "Pedido não encontrado." });
+    }
+
+    const orderPath = path.join(ordersDir, `${orderId}.json`);
+    const orderRaw = await readFile(orderPath, "utf8");
+    const order = JSON.parse(orderRaw);
+
+    const songId = cleanText(order?.instantSong?.songId);
+
+    let title =
+      cleanText(order?.instantSong?.title) || instantTitleFromHistoria(order?.detalhes?.historia || "");
+
+    const fromDisk = songId ? await loadInstantSongRecord(songId) : null;
+    if (fromDisk?.title) title = cleanText(fromDisk.title);
+
+    /** @type {{ label: string, url: string, title?: string }[]} */
+    const tracksOut = [];
+    const diskOrOrderTracks = Array.isArray(fromDisk?.tracks)
+      ? fromDisk.tracks
+      : Array.isArray(order?.instantSong?.tracks)
+        ? order.instantSong.tracks
+        : [];
+    for (const row of diskOrOrderTracks) {
+      const url = safePublicHttpUrl(row?.audioUrl);
+      if (!url) continue;
+      tracksOut.push({
+        label: cleanText(row.label) || `Versão ${tracksOut.length + 1}`,
+        url,
+        title: cleanText(row.title || ""),
+      });
+    }
+    if (!tracksOut.length) {
+      const u0 =
+        safePublicHttpUrl(fromDisk?.fullUrl) || safePublicHttpUrl(order?.instantSong?.fullUrl);
+      const u1 =
+        safePublicHttpUrl(fromDisk?.fullUrlB) || safePublicHttpUrl(order?.instantSong?.fullUrlB || "");
+      if (u0) tracksOut.push({ label: "Versão 1", url: u0, title });
+      if (u1 && u1 !== u0) tracksOut.push({ label: "Versão 2", url: u1, title });
+    }
+
+    const primaryUrl = tracksOut[0]?.url;
+    if (!primaryUrl) {
+      return res.status(404).json({ error: "Arquivo não disponível." });
+    }
+
+    const secondaryUrl = tracksOut[1]?.url || null;
+
+    res.json({
+      success: true,
+      fullUrl: primaryUrl,
+      fullUrlB: secondaryUrl,
+      tracks: tracksOut,
+      title,
+      songId: songId || null,
+    });
+  } catch (err) {
+    console.error("instant-paid-download:", err);
+    res.status(500).json({ error: "Não foi possível validar o pagamento." });
   }
 });
 
@@ -388,6 +898,186 @@ app.post("/api/generate-delivery", async (req, res) => {
   } catch (err) {
     console.error("Erro ao gerar entrega:", err);
     res.status(500).json({ error: "Erro interno ao gerar entrega" });
+  }
+});
+
+async function persistInstantSongRecord(songId, historia, trackList) {
+  const t0 = trackList[0];
+  const t1 = trackList[1];
+  await saveInstantSongRecord(songId, {
+    songId,
+    historia: cleanText(historia),
+    criadoEm: new Date().toISOString(),
+    tracks: trackList.map((t, i) => ({
+      label: `Versão ${i + 1}`,
+      audioUrl: t.audioUrl,
+      title: t.title,
+    })),
+    fullUrl: t0?.audioUrl,
+    fullUrlB: t1?.audioUrl ?? null,
+    title: t0?.title || instantTitleFromHistoria(historia),
+  });
+}
+
+// Opcional: o Suno (sunoapi.org) pode disparar webhook — respondemos para evitar timeouts do lado deles
+app.all("/api/suno-callback-ignore", (_req, res) => res.status(204).end());
+
+// API: gera música (Suno quando SUNO_API_KEY existe; caso contrário, demo interna)
+app.post("/api/generate-instant-song", async (req, res) => {
+  const descricao = cleanText(
+    req.body?.descricao ?? req.body?.historia ?? req.body?.prompt,
+  );
+
+  if (!descricao) {
+    return res.status(400).json({ error: "Descreva sua história e o estilo desejados." });
+  }
+  if (descricao.length < 40) {
+    return res.status(400).json({
+      error: "Para a IA criar bem a letra, escreva um pouco mais (mínimo 40 caracteres).",
+    });
+  }
+  if (descricao.length > SUNO_SIMPLE_PROMPT_MAX) {
+    return res.status(400).json({
+      error: `Máximo de ${SUNO_SIMPLE_PROMPT_MAX} caracteres neste modo (pedido oficial da Suno API).`,
+    });
+  }
+
+  const requestIp = getInstantRequestIp(req);
+  const counts = await readInstantGenerationCountsByIp();
+  const limit = INSTANT_GEN_LIMIT_IP;
+  if ((counts[requestIp] || 0) >= limit) {
+    return res.status(429).json({
+      error:
+        "Você atingiu o limite de prévias grátis neste dispositivo/rede. Para continuar, finalize a compra quando estiver pronto ou fale conosco.",
+      limit,
+    });
+  }
+
+  try {
+    const songId = randomUUID();
+    const fallbackTitle = instantTitleFromHistoria(descricao);
+
+    /** @type {{ audioUrl: string, title: string }[]} */
+    let trackPairs = [];
+
+    const sunoTracks = await generateWithSuno(descricao).catch((e) => {
+      console.warn("Suno falhou ou indisponível, usando fallback de demonstração:", e?.message || e);
+      return null;
+    });
+
+    if (Array.isArray(sunoTracks) && sunoTracks.length > 0) {
+      trackPairs = sunoTracks;
+    } else {
+      console.log(`Gerando música (demo): — ${descricao.slice(0, 40)}…`);
+      await new Promise((r) => setTimeout(r, 2000));
+      const demo =
+        "https://res.cloudinary.com/dc48hzb6b/video/upload/v1778091333/Dona_Teresa_u4rkas.mp3";
+      trackPairs = [
+        { audioUrl: demo, title: "Demo · Versão 1 (adicione SUNO_API_KEY)" },
+        { audioUrl: demo, title: "Demo · Versão 2 (mesmo áudio exemplo)" },
+      ];
+    }
+
+    await persistInstantSongRecord(songId, descricao, trackPairs.slice(0, 2));
+
+    await incrementInstantGenerationForIp(requestIp).catch(() => {});
+
+    const v0 = trackPairs[0];
+    const v1 = trackPairs[1];
+    const title = cleanText(v0?.title) || fallbackTitle;
+
+    res.json({
+      success: true,
+      songId,
+      title,
+      tracks: [
+        {
+          label: "Versão 1",
+          previewUrl: v0.audioUrl,
+          fullUrl: v0.audioUrl,
+          title: v0.title || title,
+        },
+        ...(v1
+          ? [
+              {
+                label: "Versão 2",
+                previewUrl: v1.audioUrl,
+                fullUrl: v1.audioUrl,
+                title: v1.title || title,
+              },
+            ]
+          : []),
+      ],
+      previewUrl: v0.audioUrl,
+      fullUrl: v0.audioUrl,
+      fullUrlB: v1?.audioUrl ?? null,
+    });
+  } catch (err) {
+    console.error("Erro na geração IA:", err);
+    res.status(500).json({
+      error: err?.message?.startsWith?.("suno_")
+        ? "Não foi possível gerar com o Suno. Tente de novo ou use o modo demo sem chave."
+        : "Falha ao gerar música. Tente novamente.",
+    });
+  }
+});
+
+// API: Send Download Link via Email
+app.post("/api/send-download-link", async (req, res) => {
+  const email = cleanText(req.body?.email);
+  const downloadsRaw = req.body?.downloads;
+  const songUrl = safePublicHttpUrl(req.body?.songUrl);
+  const songTitle = cleanText(req.body?.songTitle);
+
+  /** @type {{ label: string, url: string }[]} */
+  let downloads = [];
+  if (Array.isArray(downloadsRaw)) {
+    for (const d of downloadsRaw) {
+      const url = safePublicHttpUrl(typeof d?.url === "string" ? d.url : "");
+      const label = cleanText(d?.label) || `Versão`;
+      if (url) downloads.push({ label, url });
+    }
+  }
+  if (!downloads.length && songUrl) {
+    downloads.push({ label: "Versão 1", url: songUrl });
+    const alt = safePublicHttpUrl(typeof req.body?.songUrlB === "string" ? req.body.songUrlB : "");
+    if (alt && alt !== songUrl) downloads.push({ label: "Versão 2", url: alt });
+  }
+
+  if (!email || !downloads.length) {
+    return res.status(400).json({ error: "E-mail e links de música são obrigatórios." });
+  }
+
+  if (!resend) {
+    return res.status(500).json({ error: "Serviço de e-mail não configurado." });
+  }
+
+  try {
+    const linksHtml = downloads
+      .map(
+        (row, i) =>
+          `<p style="margin:14px 0;"><a href="${escapeHtml(row.url)}" style="display:inline-block; background:${i === 0 ? "#b94f37" : "#0f766e"}; color:#fff; padding:15px 25px; text-decoration:none; border-radius:8px; font-weight:bold;">Baixar ${escapeHtml(row.label)}</a></p>`,
+      )
+      .join("");
+
+    await resend.emails.send({
+      from: "Homenagem Musical <noreply@hmusical.com.br>",
+      to: [email],
+      subject: "Seus arquivos de áudio chegaram! 🎵",
+      html: `
+        <h1>Aqui estão suas músicas! ❤️</h1>
+        <p>Você pediu cópia de segurança: <strong>${escapeHtml(songTitle || "Sua homenagem")}</strong>.</p>
+        <p>Use os botões abaixo para baixar cada versão (MP3).</p>
+        ${linksHtml}
+        <hr/>
+        <p>Homenagem Musical — Eternizando momentos.</p>
+      `,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao enviar link de download:", err);
+    res.status(500).json({ error: "Erro ao enviar e-mail." });
   }
 });
 

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua Música está Pronta! 🎵 | Homenagem Musical</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #16120f;
+            --paper: #fffaf2;
+            --clay: #b94f37;
+            --teal: #0f766e;
+            --soft: #f4efe4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Lexend Deca', sans-serif;
+            background:
+                radial-gradient(circle at 12% 0%, rgba(185, 79, 55, 0.12), transparent 40%),
+                var(--paper);
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .success-card {
+            background: #fff;
+            max-width: 620px;
+            width: 100%;
+            padding: 60px 40px;
+            border-radius: 40px;
+            text-align: center;
+            box-shadow: 0 24px 80px rgba(55, 30, 19, 0.12);
+        }
+
+        .success-header h1 {
+            font-size: 2.5rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .success-header p {
+            color: rgba(22, 18, 15, 0.7);
+            margin-bottom: 40px;
+        }
+
+        .download-row {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-decoration: none;
+            padding: 18px 32px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .download-btn:first-of-type {
+            background: var(--clay);
+            box-shadow: 0 12px 24px rgba(185, 79, 55, 0.25);
+        }
+
+        .download-btn.download-btn--v2 {
+            background: var(--teal);
+            box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
+        }
+
+        .download-btn:hover:not([aria-disabled="true"]) {
+            transform: translateY(-2px);
+        }
+
+        .download-btn[aria-disabled="true"] {
+            opacity: 0.45;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .email-section {
+            background: var(--soft);
+            padding: 30px;
+            border-radius: 24px;
+            margin-top: 20px;
+        }
+
+        .email-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+
+        .email-section p {
+            font-size: 0.9rem;
+            color: rgba(22, 18, 15, 0.6);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .email-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .email-form input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .email-form button {
+            background: var(--ink);
+            color: #fff;
+            border: none;
+            padding: 0 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .footer-note {
+            margin-top: 40px;
+            font-size: 0.8rem;
+            color: rgba(22, 18, 15, 0.4);
+        }
+
+        .success-msg {
+            color: var(--teal);
+            font-weight: 700;
+            display: none;
+            margin-top: 15px;
+        }
+
+        .error-msg {
+            color: #b91c1c;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            .success-card { padding: 40px 20px; }
+            .email-form { flex-direction: column; }
+            .email-form button { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="success-card">
+        <div class="success-header">
+            <p style="color: var(--clay); font-weight: 800; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 10px;">Pagamento Confirmado! ✨</p>
+            <h1>Sua música está pronta para brilhar.</h1>
+            <p>Obrigado por confiar na Homenagem Musical. Seu pacote inclui <strong>as duas versões</strong>. Baixe os arquivos abaixo.</p>
+        </div>
+
+        <p id="loadError" class="error-msg" role="alert">Não foi possível localizar os arquivos. Volte pela página que o Stripe abriu após o pagamento ou entre em contato.</p>
+
+        <div id="downloadsRow" class="download-row" aria-live="polite"></div>
+
+        <div class="email-section">
+            <h3>Não perca seus arquivos! 📧</h3>
+            <p>Recomendamos fortemente que você deixe seu e-mail para receber uma cópia de segurança com links das duas versões.</p>
+            
+            <form id="emailBackupForm" class="email-form">
+                <input type="email" id="userEmail" placeholder="Seu melhor e-mail" required>
+                <button type="submit">Enviar Cópia</button>
+            </form>
+            <p id="emailSuccess" class="success-msg">E-mail enviado com sucesso! ❤️</p>
+        </div>
+
+        <p class="footer-note">Esta é uma página temporária. Lembre-se de salvar os arquivos agora.</p>
+    </div>
+
+    <script>
+        (async () => {
+            const params = new URLSearchParams(window.location.search);
+            const sessionId = params.get('session_id');
+
+            let songData = { tracks: [] };
+
+            if (sessionId) {
+                try {
+                    const response = await fetch('/api/instant-paid-download?session_id=' + encodeURIComponent(sessionId));
+                    if (response.ok) {
+                        const j = await response.json();
+                        songData = {
+                            tracks: Array.isArray(j.tracks)
+                                ? j.tracks
+                                : j.fullUrl
+                                  ? [{ label: 'Versão 1', url: j.fullUrl }]
+                                  : [],
+                            title: j.title,
+                            songId: j.songId,
+                            success: true
+                        };
+                        if (songData.tracks.length === 1 && j.fullUrlB) {
+                            songData.tracks.push({
+                                label: 'Versão 2',
+                                url: j.fullUrlB
+                            });
+                        }
+                        localStorage.setItem('lastGeneratedSong', JSON.stringify(j));
+                    }
+                } catch (err) {
+                    console.warn(err);
+                }
+            }
+
+            const needLS = songData.tracks.length === 0;
+            let rawLs = {};
+            if (needLS) {
+                try {
+                    rawLs = JSON.parse(localStorage.getItem('lastGeneratedSong') || '{}');
+                } catch {
+                    rawLs = {};
+                }
+                if (Array.isArray(rawLs.tracks) && rawLs.tracks.length) {
+                    songData.tracks = rawLs.tracks.map((t, i) => ({
+                        label: String(t.label || `Versão ${i + 1}`),
+                        url: t.previewUrl || t.fullUrl
+                    }));
+                } else if (rawLs.fullUrl) {
+                    songData.tracks = [{ label: 'Versão 1', url: rawLs.fullUrl }];
+                    if (rawLs.fullUrlB) songData.tracks.push({ label: 'Versão 2', url: rawLs.fullUrlB });
+                }
+                songData.title = rawLs.title || '';
+            }
+
+            const loadError = document.getElementById('loadError');
+            const row = document.getElementById('downloadsRow');
+            row.innerHTML = '';
+
+            if (songData.tracks.filter((t) => t.url).length) {
+                loadError.style.display = 'none';
+                songData.tracks.forEach((t, idx) => {
+                    if (!t.url) return;
+                    const a = document.createElement('a');
+                    a.href = t.url;
+                    a.className = 'download-btn' + (idx === 1 ? ' download-btn--v2' : '');
+                    const base = songData.title || 'homenagem';
+                    const slug = (base + '_v' + (idx + 1))
+                        .replace(/\s+/gu, '-')
+                        .replace(/[^a-zA-Z0-9._-à-üÀ-Ü]+/gu, '_')
+                        .slice(0, 90);
+                    a.download = slug + '.mp3';
+                    a.textContent =
+                        idx === 0 ? 'Baixar Versão 1 (MP3)' : idx === 1 ? 'Baixar Versão 2 (MP3)' : ('Baixar ' + (t.label || 'MP3'));
+                    row.appendChild(a);
+                });
+            } else {
+                loadError.style.display = 'block';
+            }
+
+            document.getElementById('emailBackupForm').onsubmit = async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('userEmail').value.trim();
+                const btn = e.target.querySelector('button');
+                const successMsg = document.getElementById('emailSuccess');
+
+                const dl = songData.tracks.filter((t) => t.url).map((t) => ({
+                    label: t.label || 'MP3',
+                    url: t.url
+                }));
+
+                if (!dl.length) {
+                    alert('Nenhum arquivo disponível para enviar.');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = 'Enviando...';
+
+                try {
+                    const response = await fetch('/api/send-download-link', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email,
+                            songTitle: songData.title || 'Sua música',
+                            downloads: dl
+                        })
+                    });
+
+                    if (response.ok) {
+                        successMsg.style.display = 'block';
+                        e.target.style.display = 'none';
+                    } else {
+                        alert('Erro ao enviar e-mail.');
+                        btn.disabled = false;
+                        btn.textContent = 'Enviar Cópia';
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Erro de conexão.');
+                    btn.disabled = false;
+                    btn.textContent = 'Enviar Cópia';
+                }
+            };
+        })();
+    </script>
+</body>
+</html>
