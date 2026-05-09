@@ -423,6 +423,28 @@ h2 {
   padding-left: 1.2rem;
 }
 
+.price-card .price-card-example {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--clay);
+}
+
+.price-card .price-card-example:hover {
+  color: var(--teal);
+}
+
+.price-card.featured .price-card-example {
+  color: #fde68a;
+}
+
+.price-card.featured .price-card-example:hover {
+  color: #fef3c7;
+}
+
 .price-card .button {
   margin-top: auto;
 }
