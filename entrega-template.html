@@ -20,6 +20,7 @@
             --spotify-green: #1db954;
             --spotify-green-hover: #1ed760;
             --clay: #b94f37;
+            --white: #ffffff;
         }
 
         * {
@@ -93,6 +94,14 @@
             background-color: #333;
             flex-shrink: 0;
             scroll-snap-align: center;
+        }
+
+        #secondPhoto {
+            display: none;
+        }
+
+        .has-two-photos #secondPhoto {
+            display: block;
         }
 
         .photo-slider-wrapper {
@@ -760,8 +769,7 @@
                 <div class="photo-slider-wrapper [[HAS_SECOND_PHOTO_CLASS]]">
                     <div class="photo-slider" id="photoSlider">
                         <img src="[[PHOTO_URL]]" alt="Capa" class="album-cover" id="mainPhoto">
-                        <img src="[[PHOTO_URL_B]]" alt="Capa 2" class="album-cover" id="secondPhoto"
-                            style="display: [[PHOTO_URL_B]] ? 'block' : 'none'">
+                        <img src="[[PHOTO_URL_B]]" alt="Capa 2" class="album-cover" id="secondPhoto">
                     </div>
                     <div class="slider-dots">
                         <span class="dot active" data-index="0"></span>
