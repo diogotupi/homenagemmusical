@@ -1,13 +1,12 @@
 <!doctype html>
-<!-- Site completo (mantido offline): site-completo.html -->
 <html lang="pt-BR">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Homenagem Musical — site em construção. Em breve novidades." />
-  <meta name="robots" content="noindex, nofollow" />
-  <title>Homenagem Musical | Em breve</title>
+  <meta name="description"
+    content="Serviço de músicas sob encomenda: conte sua história e receba uma canção original feita com tecnologia, sensibilidade e direção humana." />
+  <title>Homenagem Musical | Canções sob encomenda</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,14 +15,810 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body class="coming-soon-page">
-  <main class="coming-soon" role="main">
-    <p class="coming-soon__mark" aria-hidden="true">♪</p>
-    <p class="coming-soon__brand">Homenagem Musical</p>
-    <h1 class="coming-soon__title">Site em construção</h1>
-    <p class="coming-soon__lede">Em breve novidades por aqui.</p>
-    <p class="coming-soon__hint">Obrigado por visitar — volte em breve.</p>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#inicio" aria-label="Homenagem Musical">
+      <span class="brand-mark">♪</span>
+      <span>Homenagem Musical</span>
+    </a>
+    <nav class="nav" aria-label="Navegação principal">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#portfolio">Portfólio</a>
+      <a href="#planos">Planos</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="header-cta" href="#planos">Criar minha música</a>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="hero-copy">
+        <p class="eyebrow">Canções únicas para momentos que merecem ficar</p>
+        <h1>SUA HISTÓRIA<br />VIRANDO MÚSICA</h1>
+        <p class="hero-text">
+          Transformamos memórias, homenagens e declarações em músicas originais,
+          combinando criação e cuidado humano com tecnologia que permite agilidade.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="#planos">Começar pedido</a>
+          <a class="button ghost" href="#portfolio">Ouvir exemplos</a>
+        </div>
+        <div class="hero-stats" aria-label="Diferenciais do serviço">
+          <span><strong>100%</strong> original</span>
+          <span><strong>3 a 5 dias</strong> para entrega</span>
+          <span><strong>Música e Letra</strong> sob medida</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section music-playground music-playground--hero-follow" id="gerador-instantaneo"
+      aria-labelledby="playground-title">
+      <div class="music-playground__wrap">
+        <header class="music-playground__head section-heading">
+          <p class="section-kicker">Gerador IA</p>
+          <h2 id="playground-title">Geração instantânea</h2>
+          <p class="music-playground__lead">
+            Escreva o que você imagina para a música. A letra será criada pela IA com base na sua história.
+          </p>
+          <p class="music-playground__lead-tip" role="note">
+            <strong>Tome um tempo aqui:</strong> escreva o máximo que puder <strong>e não esqueça de dizer o estilo</strong>.
+          </p>
+        </header>
+
+        <div class="music-playground__card">
+          <p class="music-playground__card-kicker">Geração de música</p>
+
+          <form id="aiGeneratorForm" class="music-playground__form">
+            <div class="music-playground__field">
+              <label for="promptHistoria">Descrição para a música</label>
+              <textarea id="promptHistoria" name="descricao" maxlength="500" rows="8" required spellcheck="true"
+                placeholder="Exemplo: Dona Maria conheceu José em um baile no interior e viveram juntos por 42 anos. Ela adorava fazer o cabelo no salão da Dona Célia toda sexta-feira e nunca deixava faltar lasanha nos almoços de domingo com os netos. Música emocionante sobre amor simples, família e saudade. Estilo: sertanejo romântico moderno com vocal feminino."></textarea>
+            </div>
+
+            <button type="submit" class="button primary music-playground__submit" id="btnGerarIA">Gerar música</button>
+          </form>
+        </div>
+
+        <div id="aiLoading" class="music-playground__loading" hidden role="status" aria-live="polite">
+          <div class="music-playground__spinner" aria-hidden="true"></div>
+          <div class="music-playground__loading-copy">
+            <p>Produzindo sua música! aguarde um pouquinho 😊</p>
+            <p class="music-playground__loading-warn"><strong>Não feche essa página.</strong></p>
+            <p class="music-playground__loading-hint"><strong>pode demorar de 1 a 3 minutos.</strong></p>
+          </div>
+        </div>
+
+        <div id="aiResultArea" class="music-playground__result" style="display: none;">
+          <p id="dualPreviewSubtitle" class="music-playground__result-note"></p>
+
+          <div class="dual-preview" id="dualPreviewGrid">
+            <div class="dual-preview__col">
+              <article class="modern-player-card modern-player-card--a" id="wrapPlayerV1">
+                <div class="modern-player-card__ribbon">
+                  <span class="preview-badge">Preview 50%</span>
+                  <span class="modern-player-card__badge-label">Versão 1</span>
+                </div>
+                <h3 class="modern-player-card__title" id="aiSongTitleV1"></h3>
+                <audio id="aiPreviewAudioV1" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
+                <div class="modern-player-card__row">
+                  <button type="button" id="btnPlayIAV1" class="modern-player-card__play" aria-label="Tocar ou pausar">▶</button>
+                  <div class="modern-player-card__seek" data-player="v1" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo do preview versão 1">
+                    <div class="modern-player-card__seek-bg"></div>
+                    <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v1"></div>
+                  </div>
+                </div>
+                <p class="modern-player-card__footnote">Ouça gratuitamente até a metade. Clique ou arraste na linha para adiantar no preview.</p>
+              </article>
+            </div>
+            <div class="dual-preview__col">
+              <article class="modern-player-card modern-player-card--b modern-player-card--v2" id="wrapPlayerV2">
+                <div class="modern-player-card__ribbon">
+                  <span class="preview-badge">Preview 50%</span>
+                  <span class="modern-player-card__badge-label">Versão 2</span>
+                </div>
+                <h3 class="modern-player-card__title" id="aiSongTitleV2"></h3>
+                <audio id="aiPreviewAudioV2" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
+                <div class="modern-player-card__row">
+                  <button type="button" id="btnPlayIAV2" class="modern-player-card__play" aria-label="Tocar ou pausar">▶</button>
+                  <div class="modern-player-card__seek" data-player="v2" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo do preview versão 2">
+                    <div class="modern-player-card__seek-bg"></div>
+                    <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v2"></div>
+                  </div>
+                </div>
+                <p class="modern-player-card__footnote">Outra direção criativa para o mesmo texto base.</p>
+              </article>
+            </div>
+          </div>
+
+          <button class="music-playground__cta music-playground__buy" id="btnComprarIA" type="button">
+            <span class="music-playground__cta-main">Fazer o download</span>
+            <span class="music-playground__cta-sub">Das duas versões em MP3 completas · <strong>R$ 19,00</strong></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="marquee" aria-label="Tipos de música">
+      <div class="marquee-content">
+        <span>Casamentos</span>
+        <span>Aniversários</span>
+        <span>Pedidos de namoro</span>
+        <span>Homenagens</span>
+        <span>Família</span>
+        <span>Empresas</span>
+        <span>Datas especiais</span>
+      </div>
+      <div class="marquee-content" aria-hidden="true">
+        <span>Casamentos</span>
+        <span>Aniversários</span>
+        <span>Pedidos de namoro</span>
+        <span>Homenagens</span>
+        <span>Família</span>
+        <span>Empresas</span>
+        <span>Datas especiais</span>
+      </div>
+    </section>
+
+    <section class="section process" id="como-funciona">
+      <div class="section-heading">
+        <p class="section-kicker">Como funciona</p>
+        <h2>Um processo simples<br />para uma entrega íntima.</h2>
+      </div>
+      <div class="steps">
+        <article>
+          <span>01</span>
+          <h3>Você conta a história</h3>
+          <p>Envia nomes, memórias, frases marcantes, estilo musical desejado e o motivo da canção.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Criamos letra e direção</h3>
+          <p>Organizamos a narrativa, lapidamos a emoção e escolhemos o caminho musical mais adequado.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Você recebe a música</h3>
+          <p>Entregamos a faixa finalizada com letra, arquivo em alta qualidade e ajuste conforme o plano.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section portfolio" id="portfolio">
+      <div class="section-heading">
+        <p class="section-kicker">Portfólio</p>
+        <h2>Exemplos de histórias que poderiam virar música.</h2>
+      </div>
+      <div class="song-grid">
+        <article class="song-card"
+          data-audio="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778091333/Dona_Teresa_u4rkas.mp3">
+          <button class="play-button" type="button" aria-label="Tocar exemplo Dona Teresa">▶</button>
+          <div>
+            <p>Sertanejo</p>
+            <h3>Dona Teresa</h3>
+            <span>Seu Roberto, Dona Teresa, 3 filhos e muito amor!</span>
+          </div>
+        </article>
+        <article class="song-card"
+          data-audio="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778091332/Vov%C3%B3_Regina_o8lrvr.mp3">
+          <button class="play-button" type="button" aria-label="Tocar exemplo Vovó Regina">▶</button>
+          <div>
+            <p>Samba</p>
+            <h3>Vovó Regina</h3>
+            <span>Vó Regina se mudou. A familia fez a música pra ela e suas manias ❤️</span>
+          </div>
+        </article>
+        <article class="song-card"
+          data-audio="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778091332/Lucas_e_o_T%C3%AAnis_xdjnwk.mp3">
+          <button class="play-button" type="button" aria-label="Tocar exemplo O Chulé do Lucas">▶</button>
+          <div>
+            <p>Pop Rock</p>
+            <h3>O Chulé do Lucas</h3>
+            <span>não sei se ele riu, ou se ficou chateado! 😂</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section split">
+      <div>
+        <p class="section-kicker">O que entregamos</p>
+        <h2>Mais do que uma faixa: uma lembrança pronta para ser vivida.</h2>
+      </div>
+      <div class="feature-list">
+        <div><strong>Letra personalizada</strong><span>Com nomes, detalhes e cenas reais da história.</span></div>
+        <div><strong>Melodia original</strong><span>Direcionada para o clima que você quer provocar.</span></div>
+        <div><strong>Arquivo final</strong><span>Entrega em MP3 para enviar, tocar ou guardar.</span></div>
+        <div><strong>Toque humano</strong><span>Curadoria criativa para evitar uma música genérica.</span></div>
+      </div>
+    </section>
+
+    <section class="section pricing" id="planos">
+      <div class="section-heading">
+        <p class="section-kicker">Planos</p>
+        <h2>Escolha o nível de acabamento da sua música.</h2>
+      </div>
+      <div class="pricing-grid">
+        <article class="price-card">
+          <p>Essencial <span class="badge-immediate">IMEDIATO</span></p>
+          <h3>Sua música personalizada</h3>
+          <div class="price-wrapper">
+            <span class="price-old">R$ 49</span>
+            <span class="price">R$ 19</span>
+          </div>
+          <ul>
+            <li>Duas versões MP3 (letra criada pela IA)</li>
+            <li>Geração instantânea com preview gratuito</li>
+          </ul>
+          <a class="button ghost" href="#gerador-instantaneo">Teste grátis agora</a>
+        </article>
+        <article class="price-card featured">
+          <p>Mais escolhido</p>
+          <h3>Musica + Arte virtual com a letra</h3>
+          <span class="price">R$ 69</span>
+          <ul>
+            <li>Música com letra personalizada</li>
+            <li>Arte virtual com a letra da música</li>
+            <li>
+              Página exclusiva com player
+              <a class="price-card-example" href="entregas/vovo-regina-mais-escolhido.html" target="_blank"
+                rel="noopener noreferrer">Veja um exemplo</a>
+            </li>
+            <li>Entrega em até 3 dias</li>
+          </ul>
+          <a class="button primary plan-select" href="#pedido-mais-escolhido" data-plan="mais-escolhido">Quero esse</a>
+        </article>
+        <article class="price-card">
+          <p>Premium</p>
+          <h3>Experiência presenteável</h3>
+          <span class="price">R$ 79</span>
+          <ul>
+            <li>Música com letra personalizada</li>
+            <li>
+              Página exclusiva com player
+              <a class="price-card-example" href="entregas/vovo-regina-premium.html" target="_blank"
+                rel="noopener noreferrer">Veja um exemplo</a>
+            </li>
+            <li>Entrega em até 3 dias</li>
+            <li>Uma arte virtual com a letra + arte feita a partir da sua foto</li>
+          </ul>
+          <a class="button ghost plan-select" href="#pedido-premium" data-plan="premium">Solicitar</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section testimonials">
+      <div class="quote">
+        <p>
+          “A música contou nossa história melhor do que eu conseguiria escrever.
+          Virou o presente principal do aniversário.”
+        </p>
+        <span>Marina, cliente H.M</span>
+      </div>
+      <div class="quote">
+        <p>
+          “Eu mandei um texto meio bagunçado e recebi uma música muito legal! Foi muito pessoal. Todos se emocionaram
+          muito.”
+        </p>
+        <span>Rafael, cliente H.M</span>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq">
+      <div class="section-heading">
+        <p class="section-kicker">Dúvidas</p>
+        <h2>Perguntas frequentes.</h2>
+      </div>
+      <div class="faq-list">
+        <button class="faq-item" type="button">
+          <span>Posso escolher o estilo musical?</span>
+          <strong>+</strong>
+          <p>Sim. Você pode sugerir sertanejo, pop, gospel, MPB, acústico, romântico ou outro estilo de sua preferência.
+          </p>
+        </button>
+        <button class="faq-item" type="button">
+          <span>A música é exclusiva?</span>
+          <strong>+</strong>
+          <p>Sim. A letra e a direção da música são criadas para a sua história e não são revendidas.</p>
+        </button>
+        <button class="faq-item" type="button">
+          <span>Preciso saber escrever minha história?</span>
+          <strong>+</strong>
+          <p>Só precisamos de alguns detalhes da sua história, capriche na hora dos detalhes, mas não precisa ser
+            perfeito!. A gente organiza tudo em narrativa.</p>
+        </button>
+        <button class="faq-item" type="button">
+          <span>E se eu não gostar do resultado?</span>
+          <strong>+</strong>
+          <p>Sem problemas! Em até 48h após o recebimento, caso você não goste do que recebeu, você pode solicitar
+            reembolso total sem dor de cabeça. É só entrar em contato com a gente pelos nossos canais de atendimento.
+          </p>
+        </button>
+      </div>
+    </section>
+
+    <section class="contact order-page" id="pedido-essencial" data-plan-page="essencial" hidden>
+      <div class="contact-copy">
+        <p class="section-kicker">Plano Essencial</p>
+        <h2>Preencha<br />e receba sua música</h2>
+        <p>Sua música personalizada. Entrega em até 5 dias.</p>
+      </div>
+      <form class="contact-form order-form" data-plan="essencial" data-price="49">
+        <input type="hidden" name="plano" value="Essencial" />
+        <input type="hidden" name="valor" value="49" />
+        <label>
+          Nome
+          <input type="text" name="nome" placeholder="Seu nome" required />
+        </label>
+        <label>
+          WhatsApp
+          <input type="tel" name="whatsapp" placeholder="(00) 00000-0000" required />
+        </label>
+        <label>
+          E-mail
+          <input type="email" name="email" placeholder="Seu melhor e-mail" required />
+        </label>
+        <label>
+          Para qual ocasião?
+          <select name="ocasiao" required>
+            <option value="">Selecione</option>
+            <option>Presente romântico</option>
+            <option>Casamento</option>
+            <option>Aniversário</option>
+            <option>Homenagem</option>
+            <option>Outro momento</option>
+          </select>
+        </label>
+        <label>
+          Estilo musical de preferência
+          <input type="text" name="estilo" placeholder="Ex: sertanejo, gospel, pop acústico..." required />
+        </label>
+        <label>
+          Conte um pouco da história (gaste um tempo aqui)
+          <textarea name="historia" rows="5" minlength="100"
+            placeholder="Quem é a pessoa? O que aconteceu? Qual emoção a música precisa passar?" required></textarea>
+          <div class="char-counter">0 / 100 caracteres mínimos</div>
+        </label>
+        <button class="button primary" type="submit">Ir para pagamento</button>
+        <p class="form-note" role="status"></p>
+      </form>
+    </section>
+
+    <section class="contact order-page" id="pedido-mais-escolhido" data-plan-page="mais-escolhido" hidden>
+      <div class="contact-copy">
+        <p class="section-kicker">Mais escolhido</p>
+        <h2>Preencha<br />e receba sua música</h2>
+        <p>Musica + Arte virtual com a letra. Entrega em até 3 dias.</p>
+      </div>
+      <form class="contact-form order-form" data-plan="mais-escolhido" data-price="69">
+        <input type="hidden" name="plano" value="Mais escolhido" />
+        <input type="hidden" name="valor" value="69" />
+        <label>
+          Nome
+          <input type="text" name="nome" placeholder="Seu nome" required />
+        </label>
+        <label>
+          WhatsApp
+          <input type="tel" name="whatsapp" placeholder="(00) 00000-0000" required />
+        </label>
+        <label>
+          E-mail
+          <input type="email" name="email" placeholder="Seu melhor e-mail" required />
+        </label>
+        <label>
+          Para qual ocasião?
+          <select name="ocasiao" required>
+            <option value="">Selecione</option>
+            <option>Presente romântico</option>
+            <option>Casamento</option>
+            <option>Aniversário</option>
+            <option>Homenagem</option>
+            <option>Outro momento</option>
+          </select>
+        </label>
+        <label>
+          Estilo musical de preferência
+          <input type="text" name="estilo" placeholder="Ex: sertanejo, gospel, pop acústico..." required />
+        </label>
+        <label>
+          Conte um pouco da história (gaste um tempo aqui)
+          <textarea name="historia" rows="5" minlength="100"
+            placeholder="Quem é a pessoa? O que aconteceu? Qual emoção a música precisa passar?" required></textarea>
+          <div class="char-counter">0 / 100 caracteres mínimos</div>
+        </label>
+        <button class="button primary" type="submit">Ir para pagamento</button>
+        <p class="form-note" role="status"></p>
+      </form>
+    </section>
+
+    <section class="contact order-page" id="pedido-premium" data-plan-page="premium" hidden>
+      <div class="contact-copy">
+        <p class="section-kicker">Plano Premium</p>
+        <h2>Preencha<br />e receba sua música</h2>
+        <p>Experiência presenteável. Inclui arte virtual com a letra + arte feita a partir da sua foto. Entrega
+          em até 3 dias.</p>
+      </div>
+      <form class="contact-form order-form" data-plan="premium" data-price="79">
+        <input type="hidden" name="plano" value="Premium" />
+        <input type="hidden" name="valor" value="79" />
+        <label>
+          Nome
+          <input type="text" name="nome" placeholder="Seu nome" required />
+        </label>
+        <label>
+          WhatsApp
+          <input type="tel" name="whatsapp" placeholder="(00) 00000-0000" required />
+        </label>
+        <label>
+          E-mail
+          <input type="email" name="email" placeholder="Seu melhor e-mail" required />
+        </label>
+        <label>
+          Para qual ocasião?
+          <select name="ocasiao" required>
+            <option value="">Selecione</option>
+            <option>Presente romântico</option>
+            <option>Casamento</option>
+            <option>Aniversário</option>
+            <option>Homenagem</option>
+            <option>Outro momento</option>
+          </select>
+        </label>
+        <label>
+          Estilo musical de preferência
+          <input type="text" name="estilo" placeholder="Ex: sertanejo, gospel, pop acústico..." required />
+        </label>
+        <label>
+          Foto para a arte digital
+          <div class="foto-upload-wrapper">
+            <input type="file" name="foto" accept="image/*" required />
+            <svg class="foto-check" hidden width="28" height="28" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="12" fill="#10b981" />
+              <polyline points="7 13 10 16 17 9" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+        </label>
+        <label>
+          Conte um pouco da história (gaste um tempo aqui)
+          <textarea name="historia" rows="5" minlength="100"
+            placeholder="Quem é a pessoa? O que aconteceu? Qual emoção a música precisa passar?" required></textarea>
+          <div class="char-counter">0 / 100 caracteres mínimos</div>
+        </label>
+        <button class="button primary" type="submit">Ir para pagamento</button>
+        <p class="form-note" role="status"></p>
+      </form>
+    </section>
   </main>
+
+  <footer class="footer">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <span>Homenagem Musical</span>
+      <a href="termos.html" style="font-size: 0.75rem; opacity: 0.7; text-decoration: underline;">Termos e Condições</a>
+    </div>
+    <span>Feito com amor ❤️</span>
+  </footer>
+
+
+  <script>
+    (function () {
+      const aiForm = document.getElementById('aiGeneratorForm');
+      const aiLoading = document.getElementById('aiLoading');
+      const aiResult = document.getElementById('aiResultArea');
+      const promptEl = document.getElementById('promptHistoria');
+      const btnComprar = document.getElementById('btnComprarIA');
+
+      const wrapV1 = document.getElementById('wrapPlayerV1');
+      const wrapV2 = document.getElementById('wrapPlayerV2');
+
+      const players = [
+        {
+          key: 'v1',
+          audio: document.getElementById('aiPreviewAudioV1'),
+          btn: document.getElementById('btnPlayIAV1'),
+          bar: wrapV1 && wrapV1.querySelector('.progress-bar-ia[data-player="v1"]'),
+          seek: wrapV1 && wrapV1.querySelector('.modern-player-card__seek[data-player="v1"]'),
+          wrap: wrapV1,
+          titleEl: document.getElementById('aiSongTitleV1'),
+        },
+        {
+          key: 'v2',
+          audio: document.getElementById('aiPreviewAudioV2'),
+          btn: document.getElementById('btnPlayIAV2'),
+          bar: wrapV2 && wrapV2.querySelector('.progress-bar-ia[data-player="v2"]'),
+          seek: wrapV2 && wrapV2.querySelector('.modern-player-card__seek[data-player="v2"]'),
+          wrap: wrapV2,
+          titleEl: document.getElementById('aiSongTitleV2'),
+        },
+      ].filter((p) => p.audio && p.btn && p.bar && p.seek && p.wrap);
+
+      let currentSong = null;
+      const PREVIEW_HALF = 0.5;
+      /** @type {Record<string, number>} */
+      const previewEnds = { v1: Infinity, v2: Infinity };
+
+      /** @type {{ audio: HTMLAudioElement, seek: HTMLElement, bar: HTMLElement, btn: HTMLButtonElement, key: string } | null} */
+      let draggingSeek = null;
+
+      function setBuyCta(twoVers) {
+        btnComprar.innerHTML = twoVers
+          ? `<span class="music-playground__cta-main">Fazer o download</span><span class="music-playground__cta-sub">Das duas versões em MP3 completas · <strong>R$ 19,00</strong></span>`
+          : `<span class="music-playground__cta-main">Fazer o download</span><span class="music-playground__cta-sub">MP3 da versão disponível · <strong>R$ 19,00</strong></span>`;
+      }
+
+      setBuyCta(true);
+
+      function clampSeekTime(audio, previewEnd, t) {
+        if (!Number.isFinite(previewEnd) || previewEnd <= 0) return;
+        audio.currentTime = Math.max(0, Math.min(t, previewEnd));
+      }
+
+      function seekFromPointer(seekEl, audio, previewEnd, clientX) {
+        const rect = seekEl.getBoundingClientRect();
+        if (rect.width <= 0 || !Number.isFinite(previewEnd) || previewEnd <= 0) return;
+        const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        audio.currentTime = ratio * previewEnd;
+      }
+
+      function resetPreviews() {
+        players.forEach((p, i) => {
+          const key = i === 0 ? 'v1' : 'v2';
+          previewEnds[key] = Infinity;
+          p.bar.style.width = '0%';
+          p.seek.setAttribute('aria-valuenow', '0');
+          p.seek.classList.remove('modern-player-card__seek--active');
+          if (p.titleEl) p.titleEl.textContent = '';
+        });
+      }
+
+      function bindHalfPreview(spec) {
+        const keyLabel = spec.key;
+        const { audio, btn, bar, seek } = spec;
+
+        btn.onclick = () => {
+          if (audio.paused) {
+            if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime >= previewEnds[keyLabel] - 0.08) {
+              audio.currentTime = 0;
+            }
+            audio.play().catch(() => {});
+            btn.textContent = '⏸';
+          } else {
+            audio.pause();
+            btn.textContent = '▶';
+          }
+        };
+
+        audio.onseeking = () => {
+          if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime > previewEnds[keyLabel]) {
+            audio.currentTime = previewEnds[keyLabel];
+          }
+        };
+
+        audio.ontimeupdate = () => {
+          if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime >= previewEnds[keyLabel] - 0.06) {
+            audio.pause();
+            audio.currentTime = previewEnds[keyLabel];
+            btn.textContent = '▶';
+          }
+          const denom =
+            Number.isFinite(previewEnds[keyLabel]) && previewEnds[keyLabel] > 0
+              ? previewEnds[keyLabel]
+              : audio.duration || 1;
+          const percent = Math.min(100, (audio.currentTime / denom) * 100);
+          bar.style.width = percent + '%';
+          seek.setAttribute('aria-valuenow', String(Math.round(percent)));
+        };
+
+        audio.onended = () => {
+          btn.textContent = '▶';
+          bar.style.width =
+            Number.isFinite(previewEnds[keyLabel]) && previewEnds[keyLabel] > 0 ? '100%' : '0%';
+        };
+
+        seek.addEventListener('mousedown', (ev) => {
+          if (!Number.isFinite(previewEnds[keyLabel]) || previewEnds[keyLabel] <= 0) return;
+          ev.preventDefault();
+          draggingSeek = { audio, seek, bar, btn, key: keyLabel };
+          seek.classList.add('modern-player-card__seek--dragging');
+          seek.classList.add('modern-player-card__seek--active');
+          seekFromPointer(seek, audio, previewEnds[keyLabel], ev.clientX);
+        });
+
+        seek.addEventListener(
+          'touchstart',
+          (ev) => {
+            if (!Number.isFinite(previewEnds[keyLabel]) || previewEnds[keyLabel] <= 0) return;
+            if (!ev.touches.length) return;
+            ev.preventDefault();
+            draggingSeek = { audio, seek, bar, btn, key: keyLabel };
+            seek.classList.add('modern-player-card__seek--dragging');
+            seekFromPointer(seek, audio, previewEnds[keyLabel], ev.touches[0].clientX);
+          },
+          { passive: false },
+        );
+
+        seek.addEventListener('keydown', (ev) => {
+          const dur = previewEnds[keyLabel];
+          if (!Number.isFinite(dur) || dur <= 0) return;
+          const jump = dur * 0.05;
+          if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') {
+            ev.preventDefault();
+            clampSeekTime(audio, dur, audio.currentTime - jump);
+          } else if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') {
+            ev.preventDefault();
+            clampSeekTime(audio, dur, audio.currentTime + jump);
+          } else if (ev.key === 'Home') {
+            ev.preventDefault();
+            audio.currentTime = 0;
+          } else if (ev.key === 'End') {
+            ev.preventDefault();
+            audio.currentTime = dur;
+          }
+        });
+
+      }
+
+      document.addEventListener('mouseup', () => {
+        if (draggingSeek) {
+          draggingSeek.seek.classList.remove('modern-player-card__seek--dragging');
+          draggingSeek.seek.classList.remove('modern-player-card__seek--active');
+          draggingSeek = null;
+        }
+      });
+
+      document.addEventListener('mousemove', (ev) => {
+        if (!draggingSeek) return;
+        const { audio, seek, btn, key } = draggingSeek;
+        const px = previewEnds[key];
+        if (!Number.isFinite(px) || px <= 0) return;
+        seekFromPointer(seek, audio, px, ev.clientX);
+        btn.textContent = audio.paused ? '▶' : '⏸';
+      });
+
+      document.addEventListener(
+        'touchmove',
+        (ev) => {
+          if (!draggingSeek || !ev.touches.length) return;
+          ev.preventDefault();
+          const { audio, seek } = draggingSeek;
+          const px = previewEnds[draggingSeek.key];
+          if (!Number.isFinite(px) || px <= 0) return;
+          seekFromPointer(seek, audio, px, ev.touches[0].clientX);
+        },
+        { passive: false },
+      );
+
+      document.addEventListener('touchend', () => {
+        if (draggingSeek) {
+          draggingSeek.seek.classList.remove('modern-player-card__seek--dragging');
+          draggingSeek.seek.classList.remove('modern-player-card__seek--active');
+          draggingSeek = null;
+        }
+      });
+
+      players.forEach(bindHalfPreview);
+
+      aiForm.onsubmit = async (e) => {
+        e.preventDefault();
+
+        resetPreviews();
+        const descricao = promptEl.value.trim();
+
+        aiLoading.hidden = false;
+        aiResult.style.display = 'none';
+
+        try {
+          const response = await fetch('/api/generate-instant-song', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ descricao }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            currentSong = data;
+            const list = Array.isArray(data.tracks) ? data.tracks : [];
+            const dualGrid = document.getElementById('dualPreviewGrid');
+            if (dualGrid) dualGrid.classList.toggle('dual-preview--single', list.length < 2);
+            setBuyCta(list.length > 1);
+
+            const tit = data.title ? String(data.title).trim() : '';
+            document.getElementById('dualPreviewSubtitle').textContent =
+              list.length > 1
+                ? tit
+                  ? `Duas interpretações foram criadas («${tit}»). Ouça até metade de cada prévia na barra que você pode arrastar ou clicar. Para receber os MP3 completos, use o botão abaixo: fazer o download.`
+                  : 'Duas interpretações foram criadas. Ouça até metade de cada prévia (vá até onde quiser usando a timeline). Para os MP3 completos, faça o download no botão abaixo.'
+                : tit
+                  ? `Ouça até metade («${tit}»). Você pode arrastar ou clicar na linha do tempo para adiantar ou voltar dentro do preview.`
+                  : 'Ouça até metade da faixa. Você pode arrastar ou clicar na linha do tempo dentro do preview.';
+
+            players.forEach((spec, idx) => {
+              const slot = list[idx];
+              spec.wrap.style.display = slot ? '' : 'none';
+              spec.wrap.closest('.dual-preview__col').style.display = slot ? '' : 'none';
+              if (!slot) return;
+              spec.audio.src = slot.previewUrl || slot.fullUrl;
+              spec.audio.onloadedmetadata = () => {
+                const k = idx === 0 ? 'v1' : 'v2';
+                previewEnds[k] = Number.isFinite(spec.audio.duration)
+                  ? spec.audio.duration * PREVIEW_HALF
+                  : Infinity;
+              };
+              if (spec.titleEl)
+                spec.titleEl.textContent = slot.title ? String(slot.title) : '';
+            });
+
+            aiLoading.hidden = true;
+            aiResult.style.display = 'block';
+            window.scrollTo({ top: aiResult.offsetTop - 72, behavior: 'smooth' });
+            localStorage.setItem('lastGeneratedSong', JSON.stringify(data));
+          } else if (response.status === 429) {
+            aiLoading.hidden = true;
+            alert((data.error || 'Limite de testes gratuitos.') + '');
+          } else {
+            aiLoading.hidden = true;
+            alert('Erro ao gerar música: ' + (data.error || response.statusText || 'Tente novamente.'));
+          }
+        } catch (err) {
+          console.error(err);
+          aiLoading.hidden = true;
+          alert('Erro de conexão ao servidor.');
+        }
+      };
+
+      btnComprar.onclick = async () => {
+        if (!currentSong?.songId || !currentSong?.fullUrl) {
+          alert('Gere uma preview antes de fazer o download.');
+          return;
+        }
+        btnComprar.disabled = true;
+        const buyHtml = btnComprar.innerHTML;
+        btnComprar.innerHTML = '<span class="music-playground__cta-main music-playground__cta-main--solo">Um instante…</span>';
+
+        try {
+          const response = await fetch('/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              plan: 'essencial',
+              clientData: {
+                nome: 'Cliente Instantâneo',
+                email: 'pendente@email.com',
+                whatsapp: '00000000',
+                ocasiao: 'Geração instantânea',
+                estilo: '—',
+                historia: promptEl.value.trim(),
+              },
+              redirectUrl: window.location.origin + '/sucesso-download.html',
+              instantSong: {
+                songId: currentSong.songId,
+                fullUrl: currentSong.fullUrl,
+                fullUrlB: currentSong.fullUrlB || '',
+                previewUrl: currentSong.previewUrl,
+                title: currentSong.title,
+              },
+            }),
+          });
+
+          const data = await response.json();
+          if (data.url) {
+            window.location.href = data.url;
+          } else {
+            alert(data.error || 'Erro ao criar sessão de pagamento.');
+            btnComprar.disabled = false;
+            btnComprar.innerHTML = buyHtml;
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Erro ao conectar ao checkout.');
+          btnComprar.disabled = false;
+          btnComprar.innerHTML = buyHtml;
+        }
+      };
+    })();
+  </script>
+  <script src="script.js"></script>
 </body>
+
 
 </html>
