@@ -88,6 +88,11 @@ const instantGenIpCountsPath = path.join(ordersDir, "instant-gen-ip-counts.json"
 const instantGenLimitParsed = Number.parseInt(process.env.INSTANT_FREE_GEN_LIMIT ?? "3", 10);
 const INSTANT_GEN_LIMIT_IP =
   Number.isFinite(instantGenLimitParsed) && instantGenLimitParsed > 0 ? instantGenLimitParsed : 3;
+const instantGenWindowHoursParsed = Number.parseFloat(process.env.INSTANT_GEN_IP_WINDOW_HOURS ?? "2");
+const INSTANT_GEN_IP_WINDOW_MS =
+  Number.isFinite(instantGenWindowHoursParsed) && instantGenWindowHoursParsed > 0
+    ? instantGenWindowHoursParsed * 60 * 60 * 1000
+    : 2 * 60 * 60 * 1000;
 
 const prices = {
   essencial: 1900,
@@ -153,22 +158,39 @@ function getInstantRequestIp(req) {
   return fromForwarded || fromSocket || "unknown";
 }
 
-async function readInstantGenerationCountsByIp() {
+/** Prévias grátis por IP: só contam gerações dentro da janela (ex.: últimas 2 horas). */
+function pruneInstantGenerationsByIp(byIp, now = Date.now()) {
+  /** @type {Record<string, number[]>} */
+  const out = {};
+  if (!byIp || typeof byIp !== "object") return out;
+  for (const [k, arr] of Object.entries(byIp)) {
+    if (!Array.isArray(arr)) continue;
+    const fresh = arr.filter((t) => typeof t === "number" && now - t < INSTANT_GEN_IP_WINDOW_MS);
+    if (fresh.length) out[k] = fresh;
+  }
+  return out;
+}
+
+async function readInstantGenerationEventsByIp() {
   try {
     const raw = await readFile(instantGenIpCountsPath, "utf8");
     const j = JSON.parse(raw);
-    const c = j?.counts && typeof j.counts === "object" ? j.counts : {};
-    return c;
+    if (j?.byIp && typeof j.byIp === "object") {
+      return pruneInstantGenerationsByIp(j.byIp);
+    }
+    return {};
   } catch {
     return {};
   }
 }
 
-async function incrementInstantGenerationForIp(ip) {
+async function appendInstantGenerationForIp(ip) {
   await mkdir(ordersDir, { recursive: true });
-  const counts = await readInstantGenerationCountsByIp();
-  counts[ip] = (counts[ip] || 0) + 1;
-  await writeFile(instantGenIpCountsPath, JSON.stringify({ counts }, null, 2), "utf8");
+  const now = Date.now();
+  const byIp = await readInstantGenerationEventsByIp();
+  const list = [...(byIp[ip] || []), now].filter((t) => now - t < INSTANT_GEN_IP_WINDOW_MS);
+  byIp[ip] = list;
+  await writeFile(instantGenIpCountsPath, JSON.stringify({ byIp }, null, 2), "utf8");
 }
 
 /** Faixas em `response.sunoData[]`: `audioUrl` / snake_case compat. */
@@ -943,13 +965,15 @@ app.post("/api/generate-instant-song", async (req, res) => {
   }
 
   const requestIp = getInstantRequestIp(req);
-  const counts = await readInstantGenerationCountsByIp();
+  const byIp = await readInstantGenerationEventsByIp();
   const limit = INSTANT_GEN_LIMIT_IP;
-  if ((counts[requestIp] || 0) >= limit) {
+  const recent = byIp[requestIp] || [];
+  if (recent.length >= limit) {
+    const windowHours = Math.max(1, Math.round(INSTANT_GEN_IP_WINDOW_MS / (60 * 60 * 1000)));
     return res.status(429).json({
-      error:
-        "Você atingiu o limite de prévias grátis neste dispositivo/rede. Para continuar, finalize a compra quando estiver pronto ou fale conosco.",
+      error: `Você atingiu o limite de prévias grátis nas últimas ${windowHours} horas neste dispositivo/rede. Aguarde esse período para gerar de novo, finalize a compra quando estiver pronto ou fale conosco.`,
       limit,
+      windowHours,
     });
   }
 
@@ -980,7 +1004,7 @@ app.post("/api/generate-instant-song", async (req, res) => {
 
     await persistInstantSongRecord(songId, descricao, trackPairs.slice(0, 2));
 
-    await incrementInstantGenerationForIp(requestIp).catch(() => {});
+    await appendInstantGenerationForIp(requestIp).catch(() => {});
 
     const v0 = trackPairs[0];
     const v1 = trackPairs[1];

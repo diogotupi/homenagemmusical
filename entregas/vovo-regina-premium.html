@@ -768,8 +768,8 @@
             <section class="hero-section">
                 <div class="photo-slider-wrapper has-two-photos">
                     <div class="photo-slider" id="photoSlider">
-                        <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png" alt="Capa" class="album-cover" id="mainPhoto">
-                        <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778214514/hm-andre-tupinamba-sandra_giw6xl.png" alt="Capa 2" class="album-cover" id="secondPhoto">
+                        <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/vo-regina-arte_uhmybx.png" alt="Arte 1" class="album-cover" id="mainPhoto">
+                        <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/letra-placeholder_on5pht.png" alt="Arte 2 — letra" class="album-cover" id="secondPhoto">
                     </div>
                     <div class="slider-dots">
                         <span class="dot active" data-index="0"></span>
@@ -784,7 +784,7 @@
                     <p class="hero-subtitle">Homenagem Musical • <span>Sua música está pronta ❤️</span></p>
 
                     <div class="hero-actions" style="position: relative;">
-                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png" download="homenagem_musical_foto" class="btn-download-photo"
+                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/vo-regina-arte_uhmybx.png" download="homenagem_musical_arte1" class="btn-download-photo"
                             id="btnDownloadPhoto">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -792,7 +792,17 @@
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            Baixar Foto
+                            Baixar arte 1
+                        </a>
+                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/letra-placeholder_on5pht.png" download="homenagem_musical_arte2_letra" class="btn-download-photo"
+                            id="btnDownloadPhoto2">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Baixar arte 2 (letra)
                         </a>
 
                         <button class="btn-share" id="btnShare">
@@ -886,7 +896,7 @@ Mas com o neto preferido, vai sorrir e vai cantar.</div>
     <!-- Global Player Bar -->
     <div class="player-bar">
         <div class="now-playing">
-            <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png" alt="Capa" id="playerThumb">
+            <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/vo-regina-arte_uhmybx.png" alt="Capa" id="playerThumb">
             <div class="now-playing-info">
                 <h4 id="playerTitle">Selecione uma versão</h4>
                 <p id="playerArtist">Homenagem Musical</p>
@@ -1043,7 +1053,7 @@ Mas com o neto preferido, vai sorrir e vai cantar.</div>
         }
 
         // No Image Detection
-        const photoUrlValue = "https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png".trim();
+        const photoUrlValue = "https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/vo-regina-arte_uhmybx.png".trim();
         // Check if value is empty OR still contains the placeholder (meaning replacement failed)
         if (!photoUrlValue || photoUrlValue === "" || photoUrlValue === "[[PHOTO" + "_URL]]") {
             document.body.classList.add('no-image');
