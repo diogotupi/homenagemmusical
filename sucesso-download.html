@@ -149,6 +149,15 @@
             margin-top: 15px;
         }
 
+        .success-msg-detail {
+            display: none;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(22, 18, 15, 0.55);
+            line-height: 1.45;
+        }
+
         .error-msg {
             color: #b91c1c;
             font-size: 0.9rem;
@@ -185,6 +194,7 @@
                 <button type="submit">Enviar Cópia</button>
             </form>
             <p id="emailSuccess" class="success-msg">E-mail enviado com sucesso! ❤️</p>
+            <p id="emailSpamHint" class="success-msg-detail">Não esqueça de verificar se caiu na sua caixa de spam.</p>
         </div>
 
         <p class="footer-note">Esta é uma página temporária. Lembre-se de salvar os arquivos agora.</p>
@@ -303,6 +313,8 @@
 
                     if (response.ok) {
                         successMsg.style.display = 'block';
+                        const spamHint = document.getElementById('emailSpamHint');
+                        if (spamHint) spamHint.style.display = 'block';
                         e.target.style.display = 'none';
                     } else {
                         alert('Erro ao enviar e-mail.');

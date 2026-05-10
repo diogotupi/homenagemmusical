@@ -505,6 +505,24 @@ h2 {
   display: block;
 }
 
+.faq-contact-line {
+  margin: 1.75rem auto 0;
+  max-width: 36rem;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: rgba(22, 18, 15, 0.48);
+}
+
+.faq-contact-line a {
+  color: rgba(15, 118, 110, 0.85);
+  font-weight: 700;
+}
+
+.faq-contact-line a:hover {
+  color: var(--teal);
+}
+
 .contact {
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
@@ -642,6 +660,28 @@ select option {
   margin: 0 auto;
   padding: 28px 0 40px;
   color: rgba(22, 18, 15, 0.62);
+}
+
+.footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.footer__link {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  text-decoration: underline;
+  color: inherit;
+}
+
+.footer__cnpj {
+  margin: 0.85rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(22, 18, 15, 0.45);
+  letter-spacing: 0.02em;
 }
 
 @keyframes slide {
