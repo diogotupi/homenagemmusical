@@ -730,7 +730,7 @@
 
             <div class="content-grid">
                 <div class="playlist-section">
-                    <h3>Versões da sua música</h3>
+                    <h3>Sua música</h3>
                     <div class="songs-list" id="songsList">
                         
                             <div class="song-item">
@@ -887,6 +887,16 @@ como um manto de canção</div>
             return `${min}:${sec.toString().padStart(2, '0')}`;
         }
 
+        function getFirstPlaylistTrack() {
+            const item = document.querySelector('#songsList .song-item');
+            if (!item) return null;
+            const dl = item.querySelector('a.download-link');
+            const nameEl = item.querySelector('.song-name');
+            const url = dl && (dl.getAttribute('href') || dl.href || '').trim();
+            if (!url) return null;
+            return { url, name: (nameEl && nameEl.textContent.trim()) || 'Sua música' };
+        }
+
         function playSong(url, name) {
             if (audio.src !== window.location.origin + url && audio.src !== url) {
                 audio.src = url;
@@ -911,7 +921,14 @@ como um manto de canção</div>
         }
 
         masterPlayBtn.addEventListener('click', () => {
-            if (!audio.src) return;
+            if (!audio.src) {
+                const first = getFirstPlaylistTrack();
+                if (first) {
+                    playSong(first.url, first.name);
+                    return;
+                }
+                return;
+            }
             if (isPlaying) {
                 audio.pause();
                 isPlaying = false;
