@@ -574,6 +574,16 @@
         const keyLabel = spec.key;
         const { audio, btn, bar, seek } = spec;
 
+        audio.addEventListener('play', () => {
+          players.forEach((p) => {
+            if (p === spec) return;
+            if (!p.audio.paused) {
+              p.audio.pause();
+              p.btn.textContent = '▶';
+            }
+          });
+        });
+
         btn.onclick = () => {
           if (audio.paused) {
             if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime >= previewEnds[keyLabel] - 0.08) {
@@ -761,7 +771,7 @@
               spec.wrap.style.display = slot ? '' : 'none';
               spec.wrap.closest('.dual-preview__col').style.display = slot ? '' : 'none';
               if (!slot) return;
-              spec.audio.src = slot.previewUrl || slot.fullUrl;
+              spec.audio.src = slot.previewUrl || '';
               spec.audio.onloadedmetadata = () => {
                 const k = idx === 0 ? 'v1' : 'v2';
                 previewEnds[k] = Number.isFinite(spec.audio.duration)
@@ -775,7 +785,16 @@
             aiLoading.hidden = true;
             aiResult.style.display = 'block';
             window.scrollTo({ top: aiResult.offsetTop - 72, behavior: 'smooth' });
-            localStorage.setItem('lastGeneratedSong', JSON.stringify(data));
+            const storable = {
+              songId: data.songId,
+              title: data.title,
+              tracks: (data.tracks || []).map((t) => ({
+                label: t.label,
+                title: t.title,
+                previewUrl: t.previewUrl,
+              })),
+            };
+            localStorage.setItem('lastGeneratedSong', JSON.stringify(storable));
           } else if (response.status === 429) {
             aiLoading.hidden = true;
             alert((data.error || 'Limite de testes gratuitos.') + '');
@@ -791,7 +810,7 @@
       };
 
       btnComprar.onclick = async () => {
-        if (!currentSong?.songId || !currentSong?.fullUrl) {
+        if (!currentSong?.songId) {
           alert('Gere uma preview antes de fazer o download.');
           return;
         }
@@ -816,9 +835,6 @@
               redirectUrl: window.location.origin + '/sucesso-download.html',
               instantSong: {
                 songId: currentSong.songId,
-                fullUrl: currentSong.fullUrl,
-                fullUrlB: currentSong.fullUrlB || '',
-                previewUrl: currentSong.previewUrl,
                 title: currentSong.title,
               },
             }),

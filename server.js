@@ -2,7 +2,7 @@ import express from "express";
 import Stripe from "stripe";
 import cors from "cors";
 import dotenv from "dotenv";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { Resend } from "resend";
 import path from "path";
 import { mkdir, writeFile, readFile } from "fs/promises";
@@ -94,6 +94,9 @@ const INSTANT_GEN_IP_WINDOW_MS =
     ? instantGenWindowHoursParsed * 60 * 60 * 1000
     : 2 * 60 * 60 * 1000;
 
+/** Prévia sem Content-Length no upstream: limite de bytes para não vazar faixa inteira. */
+const INSTANT_PREVIEW_FALLBACK_MAX_BYTES = 3_500_000;
+
 const prices = {
   essencial: 1900,
   "mais-escolhido": 6900,
@@ -135,6 +138,51 @@ async function loadInstantSongRecord(songId) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Prévia segura: não expõe URL do MP3 completo ao cliente.
+ * Com Content-Length, envia ~50% dos bytes; sem CL, corta em INSTANT_PREVIEW_FALLBACK_MAX_BYTES.
+ */
+async function streamInstantPreviewToResponse(res, upstreamUrl) {
+  const upstreamResp = await fetch(upstreamUrl);
+  if (!upstreamResp.ok || !upstreamResp.body) {
+    return false;
+  }
+  const clHdr = upstreamResp.headers.get("content-length");
+  let byteLimit = INSTANT_PREVIEW_FALLBACK_MAX_BYTES;
+  if (clHdr) {
+    const total = Number.parseInt(clHdr.trim(), 10);
+    if (Number.isFinite(total) && total > 0) {
+      byteLimit = Math.max(1, Math.floor(total * 0.5001));
+    }
+  }
+  const ct = upstreamResp.headers.get("content-type") || "audio/mpeg";
+  res.setHeader("Content-Type", ct);
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("X-Robots-Tag", "noindex");
+
+  const reader = upstreamResp.body.getReader();
+  let sent = 0;
+  try {
+    while (sent < byteLimit) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value?.byteLength) continue;
+      const room = byteLimit - sent;
+      if (value.byteLength <= room) {
+        res.write(Buffer.from(value));
+        sent += value.byteLength;
+      } else {
+        res.write(Buffer.from(value.buffer, value.byteOffset, room));
+        await reader.cancel().catch(() => {});
+        break;
+      }
+    }
+  } finally {
+    res.end();
+  }
+  return true;
 }
 
 function instantTitleFromHistoria(historia) {
@@ -702,9 +750,7 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 
   const songId = cleanText(instantSong.songId);
-  const fullUrlPassed = safePublicHttpUrl(instantSong.fullUrl);
-  const fullUrlPassedB = safePublicHttpUrl(instantSong.fullUrlB);
-  if (!songId || !fullUrlPassed) {
+  if (!songId) {
     return res.status(400).json({ error: "Dados da música incompletos. Gere uma preview primeiro." });
   }
 
@@ -724,17 +770,6 @@ app.post("/create-checkout-session", async (req, res) => {
 
   if (!diskU0) {
     return res.status(400).json({ error: "Música não encontrada no servidor. Gere a preview novamente." });
-  }
-  if (safePublicHttpUrl(diskU0) !== fullUrlPassed) {
-    return res.status(400).json({ error: "A preview não confere com o servidor. Atualize a página e gere de novo." });
-  }
-  if (diskU1) {
-    if (!fullUrlPassedB) {
-      return res.status(400).json({ error: "Falta dados da segunda versão. Recarregue e gere novamente." });
-    }
-    if (safePublicHttpUrl(diskU1) !== fullUrlPassedB) {
-      return res.status(400).json({ error: "A segunda faixa não confere com o servidor. Gere de novo." });
-    }
   }
 
   const resolvedFullUrl = diskU0;
@@ -1000,13 +1035,14 @@ app.post("/api/generate-delivery", async (req, res) => {
   }
 });
 
-async function persistInstantSongRecord(songId, historia, trackList) {
+async function persistInstantSongRecord(songId, historia, trackList, previewToken) {
   const t0 = trackList[0];
   const t1 = trackList[1];
   await saveInstantSongRecord(songId, {
     songId,
     historia: cleanText(historia),
     criadoEm: new Date().toISOString(),
+    previewToken: cleanText(previewToken),
     tracks: trackList.map((t, i) => ({
       label: `Versão ${i + 1}`,
       audioUrl: t.audioUrl,
@@ -1020,6 +1056,47 @@ async function persistInstantSongRecord(songId, historia, trackList) {
 
 // Opcional: o Suno (sunoapi.org) pode disparar webhook — respondemos para evitar timeouts do lado deles
 app.all("/api/suno-callback-ignore", (_req, res) => res.status(204).end());
+
+/** Prévia de áudio (metade aproximada); não revela URL do MP3 completo. */
+app.get("/api/instant-preview", async (req, res) => {
+  const songId = cleanText(typeof req.query.songId === "string" ? req.query.songId : "");
+  const token = cleanText(typeof req.query.token === "string" ? req.query.token : "");
+  const idxRaw = typeof req.query.i === "string" ? req.query.i.trim() : "0";
+  const trackIndex = idxRaw === "1" ? 1 : 0;
+
+  if (!songId || !token) {
+    return res.status(400).type("text/plain").send("Parâmetros inválidos.");
+  }
+
+  const disk = await loadInstantSongRecord(songId);
+  const diskToken = cleanText(disk?.previewToken);
+  if (!disk || !diskToken || diskToken !== token) {
+    return res.status(403).type("text/plain").send("Prévia indisponível. Gere a música novamente.");
+  }
+
+  const rows = Array.isArray(disk.tracks) ? disk.tracks : [];
+  const row = rows[trackIndex];
+  const upstreamUrl =
+    (row?.audioUrl && safePublicHttpUrl(row.audioUrl)) ||
+    (trackIndex === 0 && safePublicHttpUrl(disk.fullUrl) ? disk.fullUrl : "") ||
+    (trackIndex === 1 && safePublicHttpUrl(disk.fullUrlB) ? disk.fullUrlB : "");
+
+  if (!upstreamUrl) {
+    return res.status(404).type("text/plain").send("Faixa não encontrada.");
+  }
+
+  try {
+    const ok = await streamInstantPreviewToResponse(res, upstreamUrl);
+    if (!ok && !res.headersSent) {
+      res.status(502).type("text/plain").send("Áudio temporariamente indisponível.");
+    }
+  } catch (err) {
+    console.error("instant-preview:", err);
+    if (!res.headersSent) {
+      res.status(500).type("text/plain").send("Erro ao carregar prévia.");
+    }
+  }
+});
 
 // API: gera música (Suno quando SUNO_API_KEY existe; caso contrário, demo interna)
 app.post("/api/generate-instant-song", async (req, res) => {
@@ -1079,13 +1156,17 @@ app.post("/api/generate-instant-song", async (req, res) => {
       ];
     }
 
-    await persistInstantSongRecord(songId, descricao, trackPairs.slice(0, 2));
+    const previewToken = randomBytes(32).toString("hex");
+    await persistInstantSongRecord(songId, descricao, trackPairs.slice(0, 2), previewToken);
 
     await appendInstantGenerationForIp(requestIp).catch(() => {});
 
     const v0 = trackPairs[0];
     const v1 = trackPairs[1];
     const title = cleanText(v0?.title) || fallbackTitle;
+
+    const qBase = (i) =>
+      `/api/instant-preview?songId=${encodeURIComponent(songId)}&i=${i}&token=${encodeURIComponent(previewToken)}`;
 
     res.json({
       success: true,
@@ -1094,24 +1175,19 @@ app.post("/api/generate-instant-song", async (req, res) => {
       tracks: [
         {
           label: "Versão 1",
-          previewUrl: v0.audioUrl,
-          fullUrl: v0.audioUrl,
+          previewUrl: qBase(0),
           title: v0.title || title,
         },
         ...(v1
           ? [
               {
                 label: "Versão 2",
-                previewUrl: v1.audioUrl,
-                fullUrl: v1.audioUrl,
+                previewUrl: qBase(1),
                 title: v1.title || title,
               },
             ]
           : []),
       ],
-      previewUrl: v0.audioUrl,
-      fullUrl: v0.audioUrl,
-      fullUrlB: v1?.audioUrl ?? null,
     });
   } catch (err) {
     console.error("Erro na geração IA:", err);
