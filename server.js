@@ -149,20 +149,60 @@ function normalizeClientIp(raw) {
   return t;
 }
 
-/** HTML do segundo link de download (imagem da letra), só se `photoUrlB` for URL http(s). */
-function deliverySecondPhotoDownloadHtml(photoUrlB) {
-  const b = cleanText(photoUrlB || "");
-  if (!b || (!b.startsWith("http://") && !b.startsWith("https://"))) return "";
-  const href = b.replace(/"/g, "&quot;");
-  return `
-                        <a href="${href}" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" title="Baixar imagem da letra">
-                                <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
+function deliveryIsHttpImageUrl(raw) {
+  const u = cleanText(raw || "");
+  return Boolean(u && (u.startsWith("http://") || u.startsWith("https://")));
+}
+
+function deliveryPhotoEscHref(url) {
+  return String(url || "").replace(/"/g, "&quot;");
+}
+
+/**
+ * Em `deliveries/*.json` e no admin: `photoUrl` = letra (A), `photoUrlB` = arte (B).
+ * Entregas antigas podem ter A/B invertidos — troque no JSON ou regenere a página.
+ * Com as duas URLs, o slider e a miniatura do player mostram a arte primeiro.
+ */
+function deliveryPhotoLayout(photoUrlLetra, photoUrlArte) {
+  const letra = cleanText(photoUrlLetra || "");
+  const arte = cleanText(photoUrlArte || "");
+  const letraOk = deliveryIsHttpImageUrl(letra);
+  const arteOk = deliveryIsHttpImageUrl(arte);
+  const hasTwo = letraOk && arteOk;
+  const sliderFirst = hasTwo ? arte : letraOk ? letra : "";
+  const sliderSecond = hasTwo ? letra : "";
+  const playerThumb = sliderFirst || "";
+  return { letra, arte, hasTwo, sliderFirst, sliderSecond, playerThumb };
+}
+
+const deliveryDlSvg =
+  '<svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">\n' +
+  '                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>\n' +
+  "                                    <polyline points=\"7 10 12 15 17 10\"></polyline>\n" +
+  '                                    <line x1="12" y1="15" x2="12" y2="3"></line>\n' +
+  "                                </svg>";
+
+/** Links discretos de download: só letra, ou arte + letra (arte primeiro). */
+function deliveryHeroDownloadsHtml(photoUrlLetra, photoUrlArte) {
+  const letra = cleanText(photoUrlLetra || "");
+  const arte = cleanText(photoUrlArte || "");
+  const letraOk = deliveryIsHttpImageUrl(letra);
+  const arteOk = deliveryIsHttpImageUrl(arte);
+  if (!letraOk) return "";
+  const lh = deliveryPhotoEscHref(letra);
+  const letraLink = `
+                            <a href="${lh}" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" title="Baixar imagem da letra">
+                                ${deliveryDlSvg}
                                 <span>letra</span>
                             </a>`;
+  if (!arteOk) return letraLink.trim();
+  const ah = deliveryPhotoEscHref(arte);
+  const arteLink = `
+                            <a href="${ah}" download="homenagem_arte.png" class="dl-asset" title="Baixar arte">
+                                ${deliveryDlSvg}
+                                <span>arte</span>
+                            </a>`;
+  return (arteLink + letraLink).trim();
 }
 
 /** IP do pedido HTTP (honra proxy com trust proxy já ativado). */
@@ -903,14 +943,35 @@ app.post("/api/generate-delivery", async (req, res) => {
       return res.status(400).json({ error: "Dados incompletos" });
     }
 
+    const letraIn = cleanText(photoUrl || "");
+    const arteIn = cleanText(photoUrlB || "");
+    const letraOk = deliveryIsHttpImageUrl(letraIn);
+    const arteOk = deliveryIsHttpImageUrl(arteIn);
+    if (letraIn && !letraOk) {
+      return res.status(400).json({
+        error: "A URL da imagem da letra (A) precisa começar com http:// ou https://",
+      });
+    }
+    if (arteIn && !arteOk) {
+      return res.status(400).json({
+        error: "A URL da arte (B) precisa começar com http:// ou https://",
+      });
+    }
+    if (arteOk && !letraOk) {
+      return res.status(400).json({
+        error:
+          "A URL da imagem da letra (A) é obrigatória. A arte (B) é opcional e não pode ser enviada sem a letra.",
+      });
+    }
+
     await mkdir(deliveriesDataDir, { recursive: true });
 
     const deliveryData = {
       clientName,
       songTitle,
       lyrics,
-      photoUrl,
-      photoUrlB: photoUrlB || '',
+      photoUrl: letraIn,
+      photoUrlB: arteIn,
       expirationDate: getExpirationDate(),
       songs: []
     };
@@ -1218,14 +1279,19 @@ app.get("/entrega/:client", async (req, res) => {
       `;
     });
 
-    // Replace Placeholders
-    template = template.replaceAll("[[PHOTO_URL]]", data.photoUrl);
-    template = template.replaceAll("[[PHOTO_URL_B]]", data.photoUrlB || '');
+    const photos = deliveryPhotoLayout(data.photoUrl, data.photoUrlB);
+    // Replace Placeholders (letra = A, arte = B; slider prioriza arte quando existir)
+    template = template.replaceAll("[[PHOTO_URL]]", photos.sliderFirst);
+    template = template.replaceAll("[[PHOTO_URL_B]]", photos.sliderSecond);
     template = template.replaceAll(
       "[[HAS_SECOND_PHOTO_CLASS]]",
-      data.photoUrlB && String(data.photoUrlB).trim() ? "has-two-photos" : "",
+      photos.hasTwo ? "has-two-photos" : "",
     );
-    template = template.replaceAll("[[SECOND_PHOTO_DOWNLOAD_HTML]]", deliverySecondPhotoDownloadHtml(data.photoUrlB));
+    template = template.replaceAll(
+      "[[HERO_DOWNLOADS_HTML]]",
+      deliveryHeroDownloadsHtml(data.photoUrl, data.photoUrlB),
+    );
+    template = template.replaceAll("[[PLAYER_THUMB_URL]]", photos.playerThumb);
     template = template.replaceAll("[[SONG_TITLE]]", data.songTitle);
     template = template.replaceAll("[[LYRICS]]", data.lyrics);
     template = template.replaceAll("[[SONGS_HTML]]", songsHtml);

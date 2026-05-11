@@ -225,17 +225,17 @@
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="includeImage" checked style="width: 20px; height: 20px;">
-                        Incluir imagem de capa (Card A4)
+                        Incluir imagens (letra obrigatória; arte opcional)
                     </label>
                 </div>
 
                 <div id="photoUrlGroup">
                     <div class="form-group">
-                        <label>Imagem da arte (A) — URL Cloudinary</label>
+                        <label>Imagem da letra (A) — obrigatória, URL Cloudinary</label>
                         <input type="text" name="photoUrl" placeholder="https://res.cloudinary.com/..." style="margin-bottom: 10px;">
                     </div>
                     <div class="form-group">
-                        <label>Imagem da letra (B) — opcional, URL Cloudinary</label>
+                        <label>Imagem da arte (B) — opcional, URL Cloudinary</label>
                         <input type="text" name="photoUrlB" placeholder="https://res.cloudinary.com/..." style="margin-bottom: 20px;">
                     </div>
                 </div>
@@ -278,6 +278,45 @@
     </div>
 
     <script>
+        function adminIsHttpUrl(u) {
+            const t = (u || '').trim();
+            return t.startsWith('http://') || t.startsWith('https://');
+        }
+
+        function adminDeliveryPhotoLayout(letraRaw, arteRaw) {
+            const letra = (letraRaw || '').trim();
+            const arte = (arteRaw || '').trim();
+            const letraOk = adminIsHttpUrl(letra);
+            const arteOk = adminIsHttpUrl(arte);
+            const hasTwo = letraOk && arteOk;
+            const sliderFirst = hasTwo ? arte : (letraOk ? letra : '');
+            const sliderSecond = hasTwo ? letra : '';
+            const playerThumb = sliderFirst || '';
+            return { letra, arte, hasTwo, sliderFirst, sliderSecond, playerThumb };
+        }
+
+        const adminDlSvg =
+            '<svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>' +
+            '<polyline points="7 10 12 15 17 10"></polyline>' +
+            '<line x1="12" y1="15" x2="12" y2="3"></line>' +
+            '</svg>';
+
+        function adminHeroDownloadsHtml(letra, arte) {
+            const letraOk = adminIsHttpUrl(letra);
+            const arteOk = adminIsHttpUrl(arte);
+            if (!letraOk) return '';
+            const esc = (s) => s.replace(/"/g, '&quot;');
+            const letraLink =
+                '<a href="' + esc(letra.trim()) + '" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" title="Baixar imagem da letra">' +
+                adminDlSvg + '<span>letra</span></a>';
+            if (!arteOk) return letraLink;
+            const arteLink =
+                '<a href="' + esc(arte.trim()) + '" download="homenagem_arte.png" class="dl-asset" title="Baixar arte">' +
+                adminDlSvg + '<span>arte</span></a>';
+            return arteLink + letraLink;
+        }
+
         const form = document.getElementById('deliveryForm');
         const submitBtn = document.getElementById('submitBtn');
         const spinner = document.getElementById('spinner');
@@ -301,8 +340,20 @@
             const formData = new FormData(form);
 
             try {
-                const finalPhotoUrl = includeImage.checked ? (formData.get('photoUrl') || '').trim() : '';
-                
+                const letraUrl = includeImage.checked ? (formData.get('photoUrl') || '').trim() : '';
+                const arteUrl = includeImage.checked ? (formData.get('photoUrlB') || '').trim() : '';
+
+                if (includeImage.checked) {
+                    if (!adminIsHttpUrl(letraUrl)) {
+                        alert('Com imagens ativadas, cole a URL da imagem da letra (campo A). Ela é obrigatória.');
+                        submitBtn.disabled = false;
+                        spinner.style.display = 'none';
+                        return;
+                    }
+                }
+
+                const finalPhotoUrl = letraUrl;
+
                 const finalData = {
                     clientName: formData.get('clientName'),
                     songTitle: formData.get('songTitle'),
@@ -388,27 +439,13 @@
                 });
 
                 const photoUrlBVal = (formData.get('photoUrlB') || '').trim();
-                let secondPhotoDl = '';
-                if (
-                  photoUrlBVal &&
-                  (photoUrlBVal.startsWith('http://') || photoUrlBVal.startsWith('https://'))
-                ) {
-                  const href = photoUrlBVal.replace(/"/g, '&quot;');
-                  secondPhotoDl = `
-                        <a href="${href}" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" title="Baixar imagem da letra">
-                                <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
-                                <span>letra</span>
-                            </a>`;
-                }
+                const photos = adminDeliveryPhotoLayout(finalPhotoUrl, photoUrlBVal);
 
-                html = html.replaceAll("[[PHOTO_URL]]", finalPhotoUrl);
-                html = html.replaceAll("[[PHOTO_URL_B]]", photoUrlBVal);
-                html = html.replaceAll("[[HAS_SECOND_PHOTO_CLASS]]", photoUrlBVal ? 'has-two-photos' : '');
-                html = html.replaceAll('[[SECOND_PHOTO_DOWNLOAD_HTML]]', secondPhotoDl);
+                html = html.replaceAll("[[PHOTO_URL]]", photos.sliderFirst);
+                html = html.replaceAll("[[PHOTO_URL_B]]", photos.sliderSecond);
+                html = html.replaceAll("[[HAS_SECOND_PHOTO_CLASS]]", photos.hasTwo ? 'has-two-photos' : '');
+                html = html.replaceAll('[[HERO_DOWNLOADS_HTML]]', adminHeroDownloadsHtml(finalPhotoUrl, photoUrlBVal));
+                html = html.replaceAll('[[PLAYER_THUMB_URL]]', photos.playerThumb);
                 html = html.replaceAll("[[SONG_TITLE]]", songTitle);
                 html = html.replaceAll("[[LYRICS]]", lyrics);
                 html = html.replaceAll("[[SONGS_HTML]]", songsHtml);

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Sua Música está pronta ❤️ | Homenagem Musical</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -602,12 +602,13 @@
             right: 0;
             background: #000;
             border-top: 1px solid #282828;
-            padding: 16px 32px;
+            padding: 12px 24px max(12px, env(safe-area-inset-bottom, 0px));
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 1000;
-            height: 90px;
+            box-sizing: border-box;
+            min-height: 90px;
         }
 
         .now-playing,
@@ -705,17 +706,20 @@
             }
 
             .player-bar {
-                padding: 10px 16px;
-                height: 110px;
+                padding: 8px 14px max(28px, calc(12px + env(safe-area-inset-bottom, 0px) + 52px));
+                min-height: 0;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: flex-end;
+                align-items: stretch;
+                gap: 6px;
             }
 
             .now-playing {
                 width: 100%;
-                margin-bottom: 10px;
+                margin-bottom: 0;
                 justify-content: center;
                 gap: 8px;
+                flex-shrink: 0;
             }
 
             .lyrics-section {
@@ -738,10 +742,16 @@
 
             .player-controls {
                 width: 100%;
+                flex-shrink: 0;
+                gap: 6px;
+            }
+
+            .progress-container {
+                gap: 8px;
             }
 
             .container {
-                padding: 10px 20px 120px;
+                padding: 10px 20px calc(200px + env(safe-area-inset-bottom, 0px));
             }
         }
 
@@ -750,7 +760,7 @@
             padding: 40px;
             color: var(--text-subdued);
             font-size: 0.8rem;
-            margin-bottom: 90px;
+            margin-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
         }
 
         .expiration-banner {
@@ -806,13 +816,13 @@
 
                     <div class="hero-actions" style="position: relative;">
                         <div class="hero-downloads">
-                            <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/letra-placeholder_on5pht.png" download="homenagem_arte.png" class="dl-asset" id="btnDownloadArte" title="Baixar arte">
+                            <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/letra-placeholder_on5pht.png" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" id="btnDownloadLetra" title="Baixar imagem da letra">
                                 <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
                                     <polyline points="7 10 12 15 17 10"></polyline>
                                     <line x1="12" y1="15" x2="12" y2="3"></line>
                                 </svg>
-                                <span>arte</span>
+                                <span>letra</span>
                             </a>
                         </div>
 
@@ -829,7 +839,7 @@
                         <div class="photo-tooltip" id="photoTooltip">
                             <button class="tooltip-close" id="closeTooltip">&times;</button>
                             <strong>Dica especial ✨</strong>
-                            <p>Use os links ao lado para baixar a(s) arte(s). Você pode imprimir, emoldurar e presentear. A música toca nesta página no player abaixo. 🙂 <br><br>Ah,
+                            <p>Use os links ao lado para baixar a imagem da letra e, quando houver, a arte. Você pode imprimir, emoldurar e presentear. A música toca nesta página no player abaixo. 🙂 <br><br>Ah,
                                 lembrando, essa página fica online até o dia 9 de Maio de 2027</p>
                         </div>
                     </div>
