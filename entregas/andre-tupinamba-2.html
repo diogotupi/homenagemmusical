@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -537,6 +537,7 @@
             border-radius: 2px;
             position: relative;
             cursor: pointer;
+            touch-action: none;
         }
 
         .progress-fill {
@@ -690,8 +691,7 @@
                         <div class="photo-tooltip" id="photoTooltip">
                             <button class="tooltip-close" id="closeTooltip">&times;</button>
                             <strong>Dica especial ✨</strong>
-                            <p>Clique para baixar sua imagem e usar como quiser. Você pode imprimir, emoldurar e
-                                presentear. Escaneie o QR code da imagem para ouvir a sua música. 🙂 <br><br>Ah,
+                            <p>Use os links ao lado para baixar a(s) arte(s). Você pode imprimir, emoldurar e presentear. A música toca nesta página no player abaixo. 🙂 <br><br>Ah,
                                 lembrando, essa página fica online até o dia 8 de Maio de 2027</p>
                         </div>
                     </div>
@@ -953,11 +953,31 @@ Pra sempre
             durationTimeEl.textContent = formatTime(audio.duration);
         });
 
-        progressBar.addEventListener('click', (e) => {
+        function seekFromProgressClientX(clientX) {
+            if (!audio.duration || !Number.isFinite(audio.duration)) return;
             const rect = progressBar.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
+            if (rect.width <= 0) return;
+            const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
             audio.currentTime = pos * audio.duration;
-        });
+        }
+
+        progressBar.addEventListener('click', (e) => seekFromProgressClientX(e.clientX));
+
+        let progressScrubbing = false;
+        progressBar.addEventListener('touchstart', (e) => {
+            if (!e.touches.length) return;
+            progressScrubbing = true;
+            seekFromProgressClientX(e.touches[0].clientX);
+        }, { passive: true });
+
+        progressBar.addEventListener('touchmove', (e) => {
+            if (!progressScrubbing || !e.touches.length) return;
+            e.preventDefault();
+            seekFromProgressClientX(e.touches[0].clientX);
+        }, { passive: false });
+
+        progressBar.addEventListener('touchend', () => { progressScrubbing = false; });
+        progressBar.addEventListener('touchcancel', () => { progressScrubbing = false; });
 
         audio.addEventListener('ended', () => {
             isPlaying = false;

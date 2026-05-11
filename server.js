@@ -149,6 +149,22 @@ function normalizeClientIp(raw) {
   return t;
 }
 
+/** HTML do segundo link de download (imagem da letra), só se `photoUrlB` for URL http(s). */
+function deliverySecondPhotoDownloadHtml(photoUrlB) {
+  const b = cleanText(photoUrlB || "");
+  if (!b || (!b.startsWith("http://") && !b.startsWith("https://"))) return "";
+  const href = b.replace(/"/g, "&quot;");
+  return `
+                        <a href="${href}" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" title="Baixar imagem da letra">
+                                <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>letra</span>
+                            </a>`;
+}
+
 /** IP do pedido HTTP (honra proxy com trust proxy já ativado). */
 function getInstantRequestIp(req) {
   const xffRaw = req.headers?.["x-forwarded-for"];
@@ -1205,7 +1221,11 @@ app.get("/entrega/:client", async (req, res) => {
     // Replace Placeholders
     template = template.replaceAll("[[PHOTO_URL]]", data.photoUrl);
     template = template.replaceAll("[[PHOTO_URL_B]]", data.photoUrlB || '');
-    template = template.replaceAll("[[HAS_SECOND_PHOTO_CLASS]]", data.photoUrlB ? 'has-two-photos' : '');
+    template = template.replaceAll(
+      "[[HAS_SECOND_PHOTO_CLASS]]",
+      data.photoUrlB && String(data.photoUrlB).trim() ? "has-two-photos" : "",
+    );
+    template = template.replaceAll("[[SECOND_PHOTO_DOWNLOAD_HTML]]", deliverySecondPhotoDownloadHtml(data.photoUrlB));
     template = template.replaceAll("[[SONG_TITLE]]", data.songTitle);
     template = template.replaceAll("[[LYRICS]]", data.lyrics);
     template = template.replaceAll("[[SONGS_HTML]]", songsHtml);

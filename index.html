@@ -636,6 +636,29 @@
           { passive: false },
         );
 
+        seek.addEventListener(
+          'touchmove',
+          (ev) => {
+            if (draggingSeek?.seek !== seek || !ev.touches.length) return;
+            ev.preventDefault();
+            const px = previewEnds[keyLabel];
+            if (!Number.isFinite(px) || px <= 0) return;
+            seekFromPointer(seek, audio, px, ev.touches[0].clientX);
+            btn.textContent = audio.paused ? '▶' : '⏸';
+          },
+          { passive: false },
+        );
+
+        const endSeekTouch = () => {
+          if (draggingSeek?.seek === seek) {
+            seek.classList.remove('modern-player-card__seek--dragging');
+            seek.classList.remove('modern-player-card__seek--active');
+            draggingSeek = null;
+          }
+        };
+        seek.addEventListener('touchend', endSeekTouch);
+        seek.addEventListener('touchcancel', endSeekTouch);
+
         seek.addEventListener('keydown', (ev) => {
           const dur = previewEnds[keyLabel];
           if (!Number.isFinite(dur) || dur <= 0) return;
@@ -679,12 +702,13 @@
         (ev) => {
           if (!draggingSeek || !ev.touches.length) return;
           ev.preventDefault();
-          const { audio, seek } = draggingSeek;
+          const { audio, seek, btn } = draggingSeek;
           const px = previewEnds[draggingSeek.key];
           if (!Number.isFinite(px) || px <= 0) return;
           seekFromPointer(seek, audio, px, ev.touches[0].clientX);
+          btn.textContent = audio.paused ? '▶' : '⏸';
         },
-        { passive: false },
+        { passive: false, capture: true },
       );
 
       document.addEventListener('touchend', () => {

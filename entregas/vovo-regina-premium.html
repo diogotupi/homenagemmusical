@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -235,30 +235,50 @@
         .hero-actions {
             margin-top: 24px;
             display: flex;
-            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 18px;
         }
 
-        .btn-download-photo {
+        .hero-downloads {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 14px;
+        }
+
+        .dl-asset {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-base);
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            color: rgba(255, 255, 255, 0.88);
             text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 24px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.06);
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
             position: relative;
             z-index: 1001;
-            /* Above overlay */
         }
 
-        .btn-download-photo:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
+        .dl-asset:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.35);
+            color: #fff;
+        }
+
+        .dl-asset__icon {
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+
+        .dl-asset span {
+            font-weight: 600;
+            text-transform: lowercase;
         }
 
         .btn-share {
@@ -644,6 +664,7 @@
             border-radius: 2px;
             position: relative;
             cursor: pointer;
+            touch-action: none;
         }
 
         .progress-fill {
@@ -784,26 +805,24 @@
                     <p class="hero-subtitle">Homenagem Musical • <span>Sua música está pronta ❤️</span></p>
 
                     <div class="hero-actions" style="position: relative;">
-                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/vo-regina-arte_uhmybx.png" download="homenagem_musical_arte1" class="btn-download-photo"
-                            id="btnDownloadPhoto">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Baixar arte 1
-                        </a>
-                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/letra-placeholder_on5pht.png" download="homenagem_musical_arte2_letra" class="btn-download-photo"
-                            id="btnDownloadPhoto2">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Baixar arte 2 (letra)
-                        </a>
+                        <div class="hero-downloads">
+                            <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/vo-regina-arte_uhmybx.png" download="homenagem_arte.png" class="dl-asset" id="btnDownloadArte" title="Baixar arte">
+                                <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>arte</span>
+                            </a>
+                            <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778376474/letra-placeholder_on5pht.png" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" id="btnDownloadLetra" title="Baixar letra">
+                                <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>letra</span>
+                            </a>
+                        </div>
 
                         <button class="btn-share" id="btnShare">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -818,8 +837,7 @@
                         <div class="photo-tooltip" id="photoTooltip">
                             <button class="tooltip-close" id="closeTooltip">&times;</button>
                             <strong>Dica especial ✨</strong>
-                            <p>Clique para baixar sua imagem e usar como quiser. Você pode imprimir, emoldurar e
-                                presentear. Escaneie o QR code da imagem para ouvir a sua música. 🙂 <br><br>Ah,
+                            <p>Use os links ao lado para baixar a(s) arte(s). Você pode imprimir, emoldurar e presentear. A música toca nesta página no player abaixo. 🙂 <br><br>Ah,
                                 lembrando, essa página fica online até o dia 9 de Maio de 2027</p>
                         </div>
                     </div>
@@ -998,11 +1016,31 @@ Mas com o neto preferido, vai sorrir e vai cantar.</div>
             durationTimeEl.textContent = formatTime(audio.duration);
         });
 
-        progressBar.addEventListener('click', (e) => {
+        function seekFromProgressClientX(clientX) {
+            if (!audio.duration || !Number.isFinite(audio.duration)) return;
             const rect = progressBar.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
+            if (rect.width <= 0) return;
+            const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
             audio.currentTime = pos * audio.duration;
-        });
+        }
+
+        progressBar.addEventListener('click', (e) => seekFromProgressClientX(e.clientX));
+
+        let progressScrubbing = false;
+        progressBar.addEventListener('touchstart', (e) => {
+            if (!e.touches.length) return;
+            progressScrubbing = true;
+            seekFromProgressClientX(e.touches[0].clientX);
+        }, { passive: true });
+
+        progressBar.addEventListener('touchmove', (e) => {
+            if (!progressScrubbing || !e.touches.length) return;
+            e.preventDefault();
+            seekFromProgressClientX(e.touches[0].clientX);
+        }, { passive: false });
+
+        progressBar.addEventListener('touchend', () => { progressScrubbing = false; });
+        progressBar.addEventListener('touchcancel', () => { progressScrubbing = false; });
 
         audio.addEventListener('ended', () => {
             isPlaying = false;

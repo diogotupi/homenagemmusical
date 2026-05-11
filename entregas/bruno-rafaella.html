@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -20,6 +20,7 @@
             --spotify-green: #1db954;
             --spotify-green-hover: #1ed760;
             --clay: #b94f37;
+            --white: #ffffff;
         }
 
         * {
@@ -86,13 +87,119 @@
         }
 
         .album-cover {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: #333;
+            flex-shrink: 0;
+            scroll-snap-align: center;
+        }
+
+        #secondPhoto {
+            display: none;
+        }
+
+        .has-two-photos #secondPhoto {
+            display: block;
+        }
+
+        .photo-slider-wrapper {
+            position: relative;
             width: 232px;
             height: 232px;
             min-width: 232px;
-            border-radius: 8px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            object-fit: cover;
-            background-color: #333;
+            border-radius: 8px;
+        }
+
+        .photo-slider {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .photo-slider::-webkit-scrollbar {
+            display: none;
+        }
+
+        .slider-dots {
+            display: none;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            right: 0;
+        }
+
+        .has-two-photos .slider-dots {
+            display: flex;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: var(--clay);
+            width: 16px;
+            border-radius: 4px;
+        }
+
+        .slider-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+
+        .slider-btn:hover {
+            background: var(--clay);
+        }
+
+        .has-two-photos:hover .slider-btn {
+            display: flex;
+        }
+
+        .slider-btn.prev {
+            left: 8px;
+        }
+
+        .slider-btn.next {
+            right: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .slider-btn {
+                display: flex !important;
+                opacity: 0.7;
+            }
         }
 
         .hero-info {
@@ -128,30 +235,50 @@
         .hero-actions {
             margin-top: 24px;
             display: flex;
-            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 18px;
         }
 
-        .btn-download-photo {
+        .hero-downloads {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 14px;
+        }
+
+        .dl-asset {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-base);
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            color: rgba(255, 255, 255, 0.88);
             text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 24px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.06);
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
             position: relative;
             z-index: 1001;
-            /* Above overlay */
         }
 
-        .btn-download-photo:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
+        .dl-asset:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.35);
+            color: #fff;
+        }
+
+        .dl-asset__icon {
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+
+        .dl-asset span {
+            font-weight: 600;
+            text-transform: lowercase;
         }
 
         .btn-share {
@@ -649,7 +776,7 @@
 
 <body>
     <div class="main-wrapper">
-        <div class="expiration-banner">Esta página ficará disponível até o dia 8 de Maio de 2027</div>
+        <div class="expiration-banner">Esta página ficará disponível até o dia 10 de Maio de 2027</div>
         <div class="page-overlay" id="pageOverlay"></div>
         <header>
             <a href="/" class="logo">
@@ -660,23 +787,42 @@
 
         <div class="container">
             <section class="hero-section">
-                <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png" alt="Capa" class="album-cover" id="mainPhoto">
+                <div class="photo-slider-wrapper has-two-photos">
+                    <div class="photo-slider" id="photoSlider">
+                        <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778435383/HOMENAGEM_MUSICAL-1_kv6kka.png" alt="Capa" class="album-cover" id="mainPhoto">
+                        <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778435379/Sem_t%C3%ADtulo-3_eumeed.png" alt="Capa 2" class="album-cover" id="secondPhoto">
+                    </div>
+                    <div class="slider-dots">
+                        <span class="dot active" data-index="0"></span>
+                        <span class="dot" data-index="1"></span>
+                    </div>
+                    <button class="slider-btn prev" id="prevBtn">&#10094;</button>
+                    <button class="slider-btn next" id="nextBtn">&#10095;</button>
+                </div>
                 <div class="hero-info">
                     <p class="hero-badge">Homenagem Personalizada</p>
-                    <h1 class="hero-title" id="songTitle">A Chama de Dennis</h1>
+                    <h1 class="hero-title" id="songTitle">Rafaella</h1>
                     <p class="hero-subtitle">Homenagem Musical • <span>Sua música está pronta ❤️</span></p>
 
                     <div class="hero-actions" style="position: relative;">
-                        <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png" download="homenagem_musical_foto" class="btn-download-photo"
-                            id="btnDownloadPhoto">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Baixar Foto
-                        </a>
+                        <div class="hero-downloads">
+                            <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778435383/HOMENAGEM_MUSICAL-1_kv6kka.png" download="homenagem_arte.png" class="dl-asset" id="btnDownloadArte" title="Baixar arte">
+                                <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>arte</span>
+                            </a>
+                            <a href="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778435379/Sem_t%C3%ADtulo-3_eumeed.png" download="homenagem_letra.png" class="dl-asset dl-asset--lyrics" id="btnDownloadLetra" title="Baixar letra">
+                                <svg class="dl-asset__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>letra</span>
+                            </a>
+                        </div>
 
                         <button class="btn-share" id="btnShare">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -692,7 +838,7 @@
                             <button class="tooltip-close" id="closeTooltip">&times;</button>
                             <strong>Dica especial ✨</strong>
                             <p>Use os links ao lado para baixar a(s) arte(s). Você pode imprimir, emoldurar e presentear. A música toca nesta página no player abaixo. 🙂 <br><br>Ah,
-                                lembrando, essa página fica online até o dia 8 de Maio de 2027</p>
+                                lembrando, essa página fica online até o dia 10 de Maio de 2027</p>
                         </div>
                     </div>
                 </div>
@@ -706,13 +852,13 @@
                             <div class="song-item">
                                 <div class="song-index">1</div>
                                 <div class="song-details">
-                                    <span class="song-name">Fado</span>
+                                    <span class="song-name">Rafaella</span>
                                     <span class="song-artist">Homenagem Musical</span>
                                 </div>
-                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778218731/Chama_de_Dennis_xn7ijm.mp3', 'Fado')">
+                                <button class="play-btn-small" onclick="playSong('https://res.cloudinary.com/dc48hzb6b/video/upload/v1778435400/rafaella_vcljyp.mp3', 'Rafaella')">
                                     <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
                                 </button>
-                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778218731/Chama_de_Dennis_xn7ijm.mp3" download class="download-link">Baixar</a>
+                                <a href="https://res.cloudinary.com/dc48hzb6b/video/upload/v1778435400/rafaella_vcljyp.mp3" download class="download-link">Baixar</a>
                             </div>
                         
                     </div>
@@ -721,75 +867,60 @@
                 <div class="lyrics-side">
                     <div class="lyrics-section">
                         <h3>Letra</h3>
-                        <div class="lyrics-content" id="lyricsContent">No beco velho eu te vi passar
-com teu destino dentro da mão
-Dennis DJ, teu nome a brilhar
-feito uma bênção no meu chão
+                        <div class="lyrics-content" id="lyricsContent">Rafaella entra cedo, já tá tudo em paz
+Mão de médica, olho atento, ninguém cai pra trás
+Catarina e Martina dormem no colo da canção
+Ela ajeita o mundo inteiro com a ponta da mão
 
-Trouxeste o pandeiro pra girar
-e a rua inteira virou canção
-no teu compasso eu vi chegar
-festa e saudade no coração
+Corre o mapa na mala, corre o vento na janela
+Tem um pedaço de Paris guardado dentro dela
+Quando o dia pesa mais, ela sabe aliviar
+Todo abraço dela diz: vai ficar tudo no lugar
 
-Ó meu irmão, que beleza
-quando o som vem de verdade
-tua marca acende a mesa
-e abraça a comunidade
+Rafaella, melhor mãe do mundo
+Rafaella, amor profundo
+Catarina, Martina, vem
+Com ela tudo vai bem
 
-Dennis DJ, meu orgulho
-Dennis DJ, meu chão
-teu batuque abre o escuro
-e acende meu coração
+Rafaella, meu norte bom
+Rafaella, meu coração
+(Cuida de todos)
+(Cuida de todos)
 
-Dennis DJ, meu orgulho
-Dennis DJ, meu chão
-teu nome veste a rua
-como um manto de canção
+Tem um casaco no banco e um sonho em outro lugar
+Hoje vê torre e vitrine, amanhã quer desembarcar
+Profissão de quem acolhe, de quem sabe escutar
+Mesmo longe, ela leva um jeito de cuidar
 
-Tem suor nos teus caminhos
-tem riso, tem cicatriz
-mas teus graves fazem ninho
-no sonho de quem não se diz
+Corre o mapa na mala, corre o vento na janela
+Tem um pedaço de Paris guardado dentro dela
+Se a maré vem apressada, ela faz virar calmaria
+E a casa vira abrigo quando a noite vem vazia
 
-Quando a madrugada cai
-e a dor quer me derrubar
-tua arte me traz de volta
-pra eu continuar a cantar
+Rafaella, melhor mãe do mundo
+Rafaella, amor profundo
+Catarina, Martina, vem
+Com ela tudo vai bem
 
-Ó meu irmão, que beleza
-quando o som vem de verdade
-tua marca acende a mesa
-e abraça a comunidade
+Rafaella, meu norte bom
+Rafaella, meu coração
+(Cuida de todos)
+(Cuida de todos)
 
-Dennis DJ, meu orgulho
-Dennis DJ, meu chão
-teu batuque abre o escuro
-e acende meu coração
+Se o mundo vira excesso, ela vira direção
+Tem coragem na agenda e ternura na mão
+De Paris até a sala, ela deixa um brilho no ar
+E onde ela pisa, a vida aprende a respirar
 
-Dennis DJ, meu orgulho
-Dennis DJ, meu chão
-teu nome veste a rua
-como um manto de canção
+Rafaella, melhor mãe do mundo
+Rafaella, amor profundo
+Catarina, Martina, vem
+Com ela tudo vai bem
 
-Se a vida fecha a porta
-teu toque vira caminho
-da laje até a memória
-ninguém segue tão sozinho
-
-E eu peço ao tempo, devagar
-que não me leve esse fervor
-Dennis, fica em nossa voz
-como rei do meu suor
-
-Dennis DJ, meu orgulho
-Dennis DJ, meu chão
-teu batuque abre o escuro
-e acende meu coração
-
-Dennis DJ, meu orgulho
-Dennis DJ, meu chão
-teu nome veste a rua
-como um manto de canção</div>
+Rafaella, meu norte bom
+Rafaella, meu coração
+(Melhor mãe do mundo)
+(Melhor mãe do mundo)</div>
                     </div>
                 </div>
             </div>
@@ -803,7 +934,7 @@ como um manto de canção</div>
     <!-- Global Player Bar -->
     <div class="player-bar">
         <div class="now-playing">
-            <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png" alt="Capa" id="playerThumb">
+            <img src="https://res.cloudinary.com/dc48hzb6b/image/upload/v1778435383/HOMENAGEM_MUSICAL-1_kv6kka.png" alt="Capa" id="playerThumb">
             <div class="now-playing-info">
                 <h4 id="playerTitle">Selecione uma versão</h4>
                 <p id="playerArtist">Homenagem Musical</p>
@@ -980,7 +1111,7 @@ como um manto de canção</div>
         }
 
         // No Image Detection
-        const photoUrlValue = "https://res.cloudinary.com/dc48hzb6b/image/upload/v1778218731/Firefly_make_an_art_nouveau_from_the_image_sent_559756_wrf0hu.png".trim();
+        const photoUrlValue = "https://res.cloudinary.com/dc48hzb6b/image/upload/v1778435383/HOMENAGEM_MUSICAL-1_kv6kka.png".trim();
         // Check if value is empty OR still contains the placeholder (meaning replacement failed)
         if (!photoUrlValue || photoUrlValue === "" || photoUrlValue === "[[PHOTO" + "_URL]]") {
             document.body.classList.add('no-image');
@@ -988,6 +1119,42 @@ como um manto de canção</div>
             if (thumb) thumb.style.display = 'none';
         } else {
             document.body.classList.remove('no-image');
+        }
+        // Photo Slider Logic
+        const photoSlider = document.getElementById('photoSlider');
+        const dots = document.querySelectorAll('.dot');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        if (photoSlider && dots.length > 0) {
+            const updateDots = (index) => {
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === index);
+                });
+            };
+
+            photoSlider.addEventListener('scroll', () => {
+                const index = Math.round(photoSlider.scrollLeft / photoSlider.offsetWidth);
+                updateDots(index);
+            });
+
+            dots.forEach((dot, i) => {
+                dot.addEventListener('click', () => {
+                    photoSlider.scrollTo({
+                        left: i * photoSlider.offsetWidth,
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            if (prevBtn && nextBtn) {
+                prevBtn.addEventListener('click', () => {
+                    photoSlider.scrollBy({ left: -photoSlider.offsetWidth, behavior: 'smooth' });
+                });
+                nextBtn.addEventListener('click', () => {
+                    photoSlider.scrollBy({ left: photoSlider.offsetWidth, behavior: 'smooth' });
+                });
+            }
         }
     </script>
 </body>
