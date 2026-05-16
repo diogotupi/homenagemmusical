@@ -487,8 +487,8 @@ async function sendCustomerConfirmationEmail(order) {
   const isInstant = order.tipoPedido === "instantaneo" && order.instantSong?.fullUrl;
 
   const subject = isInstant
-    ? `Download liberado! 🎵 Sua música está pronta — Homenagem Musical`
-    : `Obra em produção! ❤️ Recebemos seu pedido na Homenagem Musical`;
+    ? `Download liberado! 🎵 Sua música está pronta — História Musical`
+    : `Obra em produção! ❤️ Recebemos seu pedido na História Musical`;
 
   if (isInstant) {
     if (/^pendente@/iu.test(order.cliente.email || "")) {
@@ -510,7 +510,7 @@ async function sendCustomerConfirmationEmail(order) {
     <div style="font-family: sans-serif; line-height: 1.6; color: #16120f; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
       <div style="text-align: center; margin-bottom: 20px;">
          <div style="background: #b94f37; color: white; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; display: inline-block; font-weight: bold; font-size: 20px;">H</div>
-         <h2 style="margin-top: 10px;">Homenagem Musical</h2>
+         <h2 style="margin-top: 10px;">História Musical</h2>
       </div>
       <h1 style="color: #b94f37; text-align: center;">Obrigado pela compra! ❤️</h1>
       <p>Olá, <strong>${escapeHtml(order.cliente.nome)}</strong>!</p>
@@ -525,7 +525,7 @@ async function sendCustomerConfirmationEmail(order) {
     try {
       if (!resend) return false;
       const info = await resend.emails.send({
-        from: "Homenagem Musical <noreply@hmusical.com.br>",
+        from: "História Musical <noreply@hmusical.com.br>",
         to: order.cliente.email,
         subject,
         html: htmlInstant,
@@ -542,7 +542,7 @@ async function sendCustomerConfirmationEmail(order) {
     <div style="font-family: sans-serif; line-height: 1.6; color: #16120f; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
       <div style="text-align: center; margin-bottom: 20px;">
          <div style="background: #b94f37; color: white; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; display: inline-block; font-weight: bold; font-size: 20px; text-align: center;">H</div>
-         <h2 style="margin-top: 10px;">Homenagem Musical</h2>
+         <h2 style="margin-top: 10px;">História Musical</h2>
       </div>
       
       <h1 style="color: #b94f37; text-align: center;">Obrigado pelo seu pedido ❤️</h1>
@@ -550,7 +550,7 @@ async function sendCustomerConfirmationEmail(order) {
       <p>Olá, <strong>${escapeHtml(order.cliente.nome)}</strong>!</p>
       
       <p>
-        Recebemos o seu pedido na <strong>Homenagem Musical</strong>
+        Recebemos o seu pedido na <strong>História Musical</strong>
         e o pagamento foi confirmado com sucesso.
       </p>
 
@@ -570,7 +570,7 @@ async function sendCustomerConfirmationEmail(order) {
       </div>
 
       <p style="margin-top: 30px; text-align: center;">
-        Obrigado por confiar na Homenagem Musical.<br>
+        Obrigado por confiar na História Musical.<br>
         <strong>Equipe H.M</strong>
       </p>
     </div>
@@ -582,7 +582,7 @@ async function sendCustomerConfirmationEmail(order) {
       return false;
     }
     const info = await resend.emails.send({
-      from: "Homenagem Musical <noreply@hmusical.com.br>",
+      from: "História Musical <noreply@hmusical.com.br>",
       to: order.cliente.email,
       subject,
       html,
@@ -647,7 +647,7 @@ async function sendOrderEmail(order) {
       return false;
     }
     const info = await resend.emails.send({
-      from: "Homenagem Musical <noreply@hmusical.com.br>",
+      from: "História Musical <noreply@hmusical.com.br>",
       to: emailTo,
       subject,
       html,
@@ -1238,7 +1238,7 @@ app.post("/api/send-download-link", async (req, res) => {
       .join("");
 
     await resend.emails.send({
-      from: "Homenagem Musical <noreply@hmusical.com.br>",
+      from: "História Musical <noreply@hmusical.com.br>",
       to: [email],
       subject: "Seus arquivos de áudio chegaram! 🎵",
       html: `
@@ -1247,7 +1247,7 @@ app.post("/api/send-download-link", async (req, res) => {
         <p>Use os botões abaixo para baixar cada versão (MP3).</p>
         ${linksHtml}
         <hr/>
-        <p>Homenagem Musical — Eternizando momentos.</p>
+        <p>História Musical — Eternizando momentos.</p>
       `,
     });
 
@@ -1272,9 +1272,9 @@ app.post("/api/send-delivery-email", async (req, res) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Homenagem Musical <noreply@hmusical.com.br>",
+      from: "História Musical <noreply@hmusical.com.br>",
       to: [email],
-      subject: "Sua Homenagem Musical está pronta! ❤️",
+      subject: "Sua História Musical está pronta! ❤️",
       html: `
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -1295,7 +1295,7 @@ app.post("/api/send-delivery-email", async (req, res) => {
         <body>
           <div class="container">
             <div class="content">
-              <a href="https://hmusical.com.br" class="logo">♪ Homenagem Musical</a>
+              <a href="https://hmusical.com.br" class="logo">♪ História Musical</a>
               <span class="emoji">🎁</span>
               <h1>Oba! Seu pedido está pronto!</h1>
               <p>Sua música personalizada foi finalizada com todo carinho.<br>
@@ -1303,7 +1303,7 @@ app.post("/api/send-delivery-email", async (req, res) => {
               <a href="${deliveryLink}" class="btn">Ouvir Minha Homenagem ❤️</a>
             </div>
             <div class="footer">
-              <p>© 2026 Homenagem Musical — Eternizando momentos em melodia.</p>
+              <p>© 2026 História Musical — Eternizando momentos em melodia.</p>
               <p>Este e-mail foi enviado automaticamente. Por favor, não responda.</p>
             </div>
           </div>
@@ -1345,7 +1345,7 @@ app.get("/entrega/:client", async (req, res) => {
             <div class="song-index">${i + 1}</div>
             <div class="song-details">
                 <span class="song-name">${song.name}</span>
-                <span class="song-artist">Homenagem Musical</span>
+                <span class="song-artist">História Musical</span>
             </div>
             <button class="play-btn-small" onclick="playSong('${song.url}', '${song.name}')">
                 <svg viewBox="0 0 24 24"><path d="M7 6v12l10-6z"></path></svg>
