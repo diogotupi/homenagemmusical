@@ -1447,10 +1447,85 @@ body.landing-page {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  background:
-    radial-gradient(circle at 50% -20%, rgba(217, 241, 232, 0.55), transparent 42%),
-    radial-gradient(circle at 80% 20%, rgba(236, 141, 120, 0.12), transparent 35%),
-    linear-gradient(180deg, #faf8f4 0%, #f3f8f9 48%, #faf8f4 100%);
+  position: relative;
+  isolation: isolate;
+  background-color: #fff6ee;
+  background-image: linear-gradient(
+    128deg,
+    #fff9f2 0%,
+    #fce8dc 22%,
+    #e8f6f2 48%,
+    #fdebd4 72%,
+    #fff5eb 100%
+  );
+  background-attachment: fixed;
+}
+
+body.landing-page::before {
+  content: "";
+  position: fixed;
+  inset: -15%;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 85% 65% at 8% 12%, rgba(236, 141, 120, 0.72) 0%, transparent 58%),
+    radial-gradient(ellipse 75% 60% at 92% 8%, rgba(15, 118, 110, 0.38) 0%, transparent 52%),
+    radial-gradient(ellipse 70% 55% at 88% 88%, rgba(241, 184, 75, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 70% at 12% 92%, rgba(185, 79, 55, 0.45) 0%, transparent 54%),
+    radial-gradient(ellipse 90% 75% at 55% 42%, rgba(217, 241, 232, 0.65) 0%, transparent 62%);
+  background-size: 100% 100%;
+  animation: landing-gradient-drift 26s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+body.landing-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+@keyframes landing-gradient-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2.5%, -2%, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(-2%, 2.5%, 0) scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.landing-page::before {
+    animation: none;
+    inset: 0;
+  }
+}
+
+body.landing-page > .site-header,
+body.landing-page > .landing-shell,
+body.landing-page > .footer {
+  position: relative;
+  z-index: 1;
+}
+
+body.landing-page .site-header--minimal {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+}
+
+body.landing-page .landing-card.music-playground__card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 1px 2px rgba(22, 18, 15, 0.04),
+    0 16px 48px rgba(185, 79, 55, 0.1);
 }
 
 body.landing-page .site-header--minimal {
@@ -1644,12 +1719,14 @@ body.landing-page .site-header--minimal .header-cta {
 }
 
 .footer--landing {
-  width: min(620px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 14px 0 20px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 14px clamp(20px, 4vw, 48px) 20px;
   font-size: 0.8rem;
   flex-shrink: 0;
   border-top: 1px solid var(--line);
+  box-sizing: border-box;
 }
 
 body.landing-page--has-result {
@@ -1669,5 +1746,57 @@ body.landing-page--has-result .landing-shell {
 
   body.landing-page--has-result .landing-shell {
     width: min(100%, calc(100% - 24px));
+  }
+}
+
+/* Landing — desktop: bloco central ~40% maior */
+@media (min-width: 901px) {
+  .landing-shell {
+    width: min(868px, calc(100% - 48px));
+    gap: clamp(26px, 4vh, 38px);
+    padding: clamp(24px, 4vh, 44px) 0 clamp(20px, 3vh, 32px);
+  }
+
+  .landing-hero__title {
+    font-size: clamp(2.15rem, 3.2vw, 3.3rem);
+    margin-bottom: 1.1rem;
+  }
+
+  .landing-card.music-playground__card {
+    padding: 1.65rem 1.75rem;
+    border-radius: 18px;
+  }
+
+  .music-playground--landing .landing-form {
+    gap: 1.1rem;
+  }
+
+  .landing-form__field label {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .music-playground--landing .landing-form__field textarea {
+    min-height: 142px;
+    padding: 1rem 1.15rem;
+    font-size: 1.05rem;
+    border-radius: 12px;
+  }
+
+  .music-playground--landing .landing-form__field input[type="text"] {
+    min-height: 54px;
+    padding: 0.95rem 1.15rem;
+    font-size: 1.05rem;
+    border-radius: 12px;
+  }
+
+  .music-playground--landing .music-playground__submit {
+    min-height: 58px;
+    font-size: 1.12rem;
+    border-radius: 12px;
+  }
+
+  body.landing-page--has-result .landing-shell {
+    width: min(1008px, calc(100% - 48px));
   }
 }
