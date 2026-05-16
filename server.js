@@ -330,6 +330,16 @@ function sunoTracksFromPayload(data) {
 /** No modo não-custom, até 2 faixas por tarefa. Esperamos SUCCESS para recuperar todas. */
 const SUNO_SIMPLE_PROMPT_MAX = 500;
 
+/** Suno recebe um único prompt; história e estilo vêm separados do formulário. */
+function buildInstantDescricao(historia, estilo) {
+  const h = cleanText(historia);
+  const e = cleanText(estilo);
+  if (!h && !e) return "";
+  if (!e) return h;
+  if (!h) return `Estilo musical: ${e}`;
+  return `${h}\n\nEstilo musical: ${e}`;
+}
+
 async function pollSunoUntilSuccessTracks(taskId, apiKey) {
   const base = cleanText(process.env.SUNO_API_BASE) || "https://api.sunoapi.org";
   const maxMs = 8 * 60 * 1000;
@@ -1100,16 +1110,25 @@ app.get("/api/instant-preview", async (req, res) => {
 
 // API: gera música (Suno quando SUNO_API_KEY existe; caso contrário, demo interna)
 app.post("/api/generate-instant-song", async (req, res) => {
-  const descricao = cleanText(
-    req.body?.descricao ?? req.body?.historia ?? req.body?.prompt,
-  );
+  const historia = cleanText(req.body?.historia);
+  const estilo = cleanText(req.body?.estilo);
+  const descricaoRaw = cleanText(req.body?.descricao ?? req.body?.prompt);
 
-  if (!descricao) {
-    return res.status(400).json({ error: "Descreva sua história e o estilo desejados." });
+  let descricao;
+  if (descricaoRaw) {
+    descricao = descricaoRaw;
+  } else {
+    if (!historia) {
+      return res.status(400).json({ error: "Conte sua história no primeiro campo." });
+    }
+    if (!estilo) {
+      return res.status(400).json({ error: "Informe o estilo musical no segundo campo." });
+    }
+    descricao = buildInstantDescricao(historia, estilo);
   }
   if (descricao.length < 40) {
     return res.status(400).json({
-      error: "Para a IA criar bem a letra, escreva um pouco mais (mínimo 40 caracteres).",
+      error: "Para a IA criar bem a letra, escreva um pouco mais na história (mínimo 40 caracteres no total).",
     });
   }
   if (descricao.length > SUNO_SIMPLE_PROMPT_MAX) {
@@ -1381,6 +1400,10 @@ app.get("/entrega/:client", async (req, res) => {
     console.error("Erro ao renderizar entrega:", err);
     res.status(404).send("<h1>Página de entrega não encontrada</h1><p>Verifique o link ou entre em contato com o suporte.</p>");
   }
+});
+
+app.get("/especiais", (_req, res) => {
+  res.sendFile(path.resolve("especiais.html"));
 });
 
 app.use("/uploads", express.static("uploads"));
