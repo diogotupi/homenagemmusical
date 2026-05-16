@@ -51,7 +51,8 @@
           <div class="music-playground__spinner" aria-hidden="true"></div>
           <div class="music-playground__loading-copy">
             <p>Produzindo sua música…</p>
-            <p class="music-playground__loading-warn"><strong>Não feche esta página.</strong></p>
+            <p class="music-playground__loading-warn">Pode trocar de app — sua música continua sendo gerada.</p>
+            <p class="music-playground__loading-hint">Volte aqui em instantes ou atualize a página para recuperar.</p>
           </div>
         </div>
 
@@ -68,10 +69,15 @@
                 <h3 class="modern-player-card__title" id="aiSongTitleV1"></h3>
                 <audio id="aiPreviewAudioV1" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
                 <div class="modern-player-card__row">
-                  <button type="button" id="btnPlayIAV1" class="modern-player-card__play" aria-label="Tocar ou pausar versão 1">▶</button>
+                  <button type="button" id="btnPlayIAV1" class="modern-player-card__play" aria-label="Tocar ou pausar versão 1">
+                    <span class="modern-player-card__icon modern-player-card__icon--play" aria-hidden="true"></span>
+                    <span class="modern-player-card__icon modern-player-card__icon--pause" aria-hidden="true"><i></i><i></i></span>
+                  </button>
                   <div class="modern-player-card__seek" data-player="v1" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo versão 1">
                     <div class="modern-player-card__seek-bg"></div>
+                    <div class="modern-player-card__seek-buffer progress-bar-ia-buffer" data-player="v1"></div>
                     <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v1"></div>
+                    <div class="modern-player-card__seek-thumb" data-player="v1"></div>
                   </div>
                 </div>
               </article>
@@ -85,10 +91,15 @@
                 <h3 class="modern-player-card__title" id="aiSongTitleV2"></h3>
                 <audio id="aiPreviewAudioV2" src="" preload="metadata" playsinline controlsList="nodownload"></audio>
                 <div class="modern-player-card__row">
-                  <button type="button" id="btnPlayIAV2" class="modern-player-card__play" aria-label="Tocar ou pausar versão 2">▶</button>
+                  <button type="button" id="btnPlayIAV2" class="modern-player-card__play" aria-label="Tocar ou pausar versão 2">
+                    <span class="modern-player-card__icon modern-player-card__icon--play" aria-hidden="true"></span>
+                    <span class="modern-player-card__icon modern-player-card__icon--pause" aria-hidden="true"><i></i><i></i></span>
+                  </button>
                   <div class="modern-player-card__seek" data-player="v2" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Linha do tempo versão 2">
                     <div class="modern-player-card__seek-bg"></div>
+                    <div class="modern-player-card__seek-buffer progress-bar-ia-buffer" data-player="v2"></div>
                     <div class="modern-player-card__seek-fill progress-bar-ia" data-player="v2"></div>
+                    <div class="modern-player-card__seek-thumb" data-player="v2"></div>
                   </div>
                 </div>
               </article>
@@ -137,6 +148,8 @@
           audio: document.getElementById('aiPreviewAudioV1'),
           btn: document.getElementById('btnPlayIAV1'),
           bar: wrapV1 && wrapV1.querySelector('.progress-bar-ia[data-player="v1"]'),
+          buffer: wrapV1 && wrapV1.querySelector('.progress-bar-ia-buffer[data-player="v1"]'),
+          thumb: wrapV1 && wrapV1.querySelector('.modern-player-card__seek-thumb[data-player="v1"]'),
           seek: wrapV1 && wrapV1.querySelector('.modern-player-card__seek[data-player="v1"]'),
           wrap: wrapV1,
           titleEl: document.getElementById('aiSongTitleV1'),
@@ -146,11 +159,13 @@
           audio: document.getElementById('aiPreviewAudioV2'),
           btn: document.getElementById('btnPlayIAV2'),
           bar: wrapV2 && wrapV2.querySelector('.progress-bar-ia[data-player="v2"]'),
+          buffer: wrapV2 && wrapV2.querySelector('.progress-bar-ia-buffer[data-player="v2"]'),
+          thumb: wrapV2 && wrapV2.querySelector('.modern-player-card__seek-thumb[data-player="v2"]'),
           seek: wrapV2 && wrapV2.querySelector('.modern-player-card__seek[data-player="v2"]'),
           wrap: wrapV2,
           titleEl: document.getElementById('aiSongTitleV2'),
         },
-      ].filter((p) => p.audio && p.btn && p.bar && p.seek && p.wrap);
+      ].filter((p) => p.audio && p.btn && p.bar && p.buffer && p.thumb && p.seek && p.wrap);
 
       let currentSong = null;
       const PREVIEW_HALF = 0.5;
@@ -165,16 +180,48 @@
 
       setBuyCta(true);
 
+      function setPlayState(btn, playing) {
+        btn.classList.toggle('is-playing', playing);
+        btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
+      }
+
+      function previewDuration(spec) {
+        const end = previewEnds[spec.key];
+        if (Number.isFinite(end) && end > 0) return end;
+        const d = spec.audio.duration;
+        return Number.isFinite(d) && d > 0 ? d : 0;
+      }
+
+      function updateSeekUi(spec) {
+        const dur = previewDuration(spec);
+        if (dur <= 0) return;
+        const percent = Math.min(100, (spec.audio.currentTime / dur) * 100);
+        spec.bar.style.width = percent + '%';
+        spec.thumb.style.left = percent + '%';
+        spec.seek.setAttribute('aria-valuenow', String(Math.round(percent)));
+
+        if (spec.buffer && spec.audio.buffered.length) {
+          let bufEnd = 0;
+          for (let i = 0; i < spec.audio.buffered.length; i++) {
+            bufEnd = Math.max(bufEnd, spec.audio.buffered.end(i));
+          }
+          const bufPct = Math.min(100, (bufEnd / dur) * 100);
+          spec.buffer.style.width = bufPct + '%';
+        }
+      }
+
       function clampSeekTime(audio, previewEnd, t) {
         if (!Number.isFinite(previewEnd) || previewEnd <= 0) return;
         audio.currentTime = Math.max(0, Math.min(t, previewEnd));
       }
 
-      function seekFromPointer(seekEl, audio, previewEnd, clientX) {
-        const rect = seekEl.getBoundingClientRect();
+      function seekFromPointer(spec, clientX) {
+        const previewEnd = previewEnds[spec.key];
+        const rect = spec.seek.getBoundingClientRect();
         if (rect.width <= 0 || !Number.isFinite(previewEnd) || previewEnd <= 0) return;
         const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        audio.currentTime = ratio * previewEnd;
+        spec.audio.currentTime = ratio * previewEnd;
+        updateSeekUi(spec);
       }
 
       function resetPreviews() {
@@ -182,24 +229,32 @@
           const key = i === 0 ? 'v1' : 'v2';
           previewEnds[key] = Infinity;
           p.bar.style.width = '0%';
+          p.buffer.style.width = '0%';
+          p.thumb.style.left = '0%';
           p.seek.setAttribute('aria-valuenow', '0');
           p.seek.classList.remove('modern-player-card__seek--active');
+          setPlayState(p.btn, false);
           if (p.titleEl) p.titleEl.textContent = '';
         });
       }
 
       function bindHalfPreview(spec) {
         const keyLabel = spec.key;
-        const { audio, btn, bar, seek } = spec;
+        const { audio, btn, seek } = spec;
 
         audio.addEventListener('play', () => {
           players.forEach((p) => {
             if (p === spec) return;
             if (!p.audio.paused) {
               p.audio.pause();
-              p.btn.textContent = '▶';
+              setPlayState(p.btn, false);
             }
           });
+          setPlayState(btn, true);
+        });
+
+        audio.addEventListener('pause', () => {
+          setPlayState(btn, false);
         });
 
         btn.onclick = () => {
@@ -208,12 +263,13 @@
               audio.currentTime = 0;
             }
             audio.play().catch(() => {});
-            btn.textContent = '⏸';
           } else {
             audio.pause();
-            btn.textContent = '▶';
           }
         };
+
+        audio.addEventListener('progress', () => updateSeekUi(spec));
+        audio.addEventListener('loadedmetadata', () => updateSeekUi(spec));
 
         audio.onseeking = () => {
           if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime > previewEnds[keyLabel]) {
@@ -225,30 +281,37 @@
           if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime >= previewEnds[keyLabel] - 0.06) {
             audio.pause();
             audio.currentTime = previewEnds[keyLabel];
-            btn.textContent = '▶';
+            setPlayState(btn, false);
           }
-          const denom =
-            Number.isFinite(previewEnds[keyLabel]) && previewEnds[keyLabel] > 0
-              ? previewEnds[keyLabel]
-              : audio.duration || 1;
-          const percent = Math.min(100, (audio.currentTime / denom) * 100);
-          bar.style.width = percent + '%';
-          seek.setAttribute('aria-valuenow', String(Math.round(percent)));
+          updateSeekUi(spec);
         };
 
         audio.onended = () => {
-          btn.textContent = '▶';
-          bar.style.width =
-            Number.isFinite(previewEnds[keyLabel]) && previewEnds[keyLabel] > 0 ? '100%' : '0%';
+          setPlayState(btn, false);
+          if (Number.isFinite(previewEnds[keyLabel]) && previewEnds[keyLabel] > 0) {
+            spec.bar.style.width = '100%';
+            spec.thumb.style.left = '100%';
+            spec.seek.setAttribute('aria-valuenow', '100');
+          }
+        };
+
+        const beginSeek = (clientX) => {
+          if (!Number.isFinite(previewEnds[keyLabel]) || previewEnds[keyLabel] <= 0) return;
+          draggingSeek = spec;
+          seek.classList.add('modern-player-card__seek--dragging');
+          seek.classList.add('modern-player-card__seek--active');
+          seekFromPointer(spec, clientX);
         };
 
         seek.addEventListener('mousedown', (ev) => {
           if (!Number.isFinite(previewEnds[keyLabel]) || previewEnds[keyLabel] <= 0) return;
           ev.preventDefault();
-          draggingSeek = { audio, seek, bar, btn, key: keyLabel };
-          seek.classList.add('modern-player-card__seek--dragging');
-          seek.classList.add('modern-player-card__seek--active');
-          seekFromPointer(seek, audio, previewEnds[keyLabel], ev.clientX);
+          beginSeek(ev.clientX);
+        });
+
+        seek.addEventListener('click', (ev) => {
+          if (!Number.isFinite(previewEnds[keyLabel]) || previewEnds[keyLabel] <= 0) return;
+          seekFromPointer(spec, ev.clientX);
         });
 
         seek.addEventListener(
@@ -257,9 +320,7 @@
             if (!Number.isFinite(previewEnds[keyLabel]) || previewEnds[keyLabel] <= 0) return;
             if (!ev.touches.length) return;
             ev.preventDefault();
-            draggingSeek = { audio, seek, bar, btn, key: keyLabel };
-            seek.classList.add('modern-player-card__seek--dragging');
-            seekFromPointer(seek, audio, previewEnds[keyLabel], ev.touches[0].clientX);
+            beginSeek(ev.touches[0].clientX);
           },
           { passive: false },
         );
@@ -267,18 +328,17 @@
         seek.addEventListener(
           'touchmove',
           (ev) => {
-            if (draggingSeek?.seek !== seek || !ev.touches.length) return;
+            if (draggingSeek !== spec || !ev.touches.length) return;
             ev.preventDefault();
             const px = previewEnds[keyLabel];
             if (!Number.isFinite(px) || px <= 0) return;
-            seekFromPointer(seek, audio, px, ev.touches[0].clientX);
-            btn.textContent = audio.paused ? '▶' : '⏸';
+            seekFromPointer(spec, ev.touches[0].clientX);
           },
           { passive: false },
         );
 
         const endSeekTouch = () => {
-          if (draggingSeek?.seek === seek) {
+          if (draggingSeek === spec) {
             seek.classList.remove('modern-player-card__seek--dragging');
             seek.classList.remove('modern-player-card__seek--active');
             draggingSeek = null;
@@ -304,24 +364,22 @@
             ev.preventDefault();
             audio.currentTime = dur;
           }
+          updateSeekUi(spec);
         });
       }
 
       document.addEventListener('mouseup', () => {
-        if (draggingSeek) {
-          draggingSeek.seek.classList.remove('modern-player-card__seek--dragging');
-          draggingSeek.seek.classList.remove('modern-player-card__seek--active');
-          draggingSeek = null;
-        }
+        if (!draggingSeek) return;
+        draggingSeek.seek.classList.remove('modern-player-card__seek--dragging');
+        draggingSeek.seek.classList.remove('modern-player-card__seek--active');
+        draggingSeek = null;
       });
 
       document.addEventListener('mousemove', (ev) => {
         if (!draggingSeek) return;
-        const { audio, seek, btn, key } = draggingSeek;
-        const px = previewEnds[key];
+        const px = previewEnds[draggingSeek.key];
         if (!Number.isFinite(px) || px <= 0) return;
-        seekFromPointer(seek, audio, px, ev.clientX);
-        btn.textContent = audio.paused ? '▶' : '⏸';
+        seekFromPointer(draggingSeek, ev.clientX);
       });
 
       document.addEventListener(
@@ -329,32 +387,202 @@
         (ev) => {
           if (!draggingSeek || !ev.touches.length) return;
           ev.preventDefault();
-          const { audio, seek, btn } = draggingSeek;
           const px = previewEnds[draggingSeek.key];
           if (!Number.isFinite(px) || px <= 0) return;
-          seekFromPointer(seek, audio, px, ev.touches[0].clientX);
-          btn.textContent = audio.paused ? '▶' : '⏸';
+          seekFromPointer(draggingSeek, ev.touches[0].clientX);
         },
         { passive: false, capture: true },
       );
 
       document.addEventListener('touchend', () => {
-        if (draggingSeek) {
-          draggingSeek.seek.classList.remove('modern-player-card__seek--dragging');
-          draggingSeek.seek.classList.remove('modern-player-card__seek--active');
-          draggingSeek = null;
-        }
+        if (!draggingSeek) return;
+        draggingSeek.seek.classList.remove('modern-player-card__seek--dragging');
+        draggingSeek.seek.classList.remove('modern-player-card__seek--active');
+        draggingSeek = null;
       });
 
       players.forEach(bindHalfPreview);
+
+      const STORAGE_PENDING = 'pendingInstantSong';
+      const STORAGE_LAST = 'lastGeneratedSong';
+      const POLL_MS = 2800;
+      const POLL_MAX_MS = 10 * 60 * 1000;
+      /** @type {Map<string, Promise<object>>} */
+      const pollBySongId = new Map();
+
+      function saveLastSong(data) {
+        localStorage.setItem(
+          STORAGE_LAST,
+          JSON.stringify({
+            songId: data.songId,
+            title: data.title,
+            tracks: (data.tracks || []).map((t) => ({
+              label: t.label,
+              title: t.title,
+              previewUrl: t.previewUrl,
+            })),
+          }),
+        );
+      }
+
+      function applySongResult(data) {
+        currentSong = data;
+        const list = Array.isArray(data.tracks) ? data.tracks : [];
+        const dualGrid = document.getElementById('dualPreviewGrid');
+        if (dualGrid) dualGrid.classList.toggle('dual-preview--single', list.length < 2);
+        setBuyCta(list.length > 1);
+
+        const tit = data.title ? String(data.title).trim() : '';
+        document.getElementById('dualPreviewSubtitle').textContent =
+          list.length > 1
+            ? tit
+              ? `Duas versões de «${tit}». Ouça até metade de cada prévia.`
+              : 'Duas versões criadas. Ouça até metade de cada prévia.'
+            : tit
+              ? `«${tit}» — ouça até metade da prévia.`
+              : 'Ouça até metade da prévia.';
+
+        players.forEach((spec, idx) => {
+          const slot = list[idx];
+          spec.wrap.style.display = slot ? '' : 'none';
+          spec.wrap.closest('.dual-preview__col').style.display = slot ? '' : 'none';
+          if (!slot) return;
+          spec.audio.src = slot.previewUrl || '';
+          spec.audio.onloadedmetadata = () => {
+            const k = idx === 0 ? 'v1' : 'v2';
+            previewEnds[k] = Number.isFinite(spec.audio.duration)
+              ? spec.audio.duration * PREVIEW_HALF
+              : Infinity;
+            updateSeekUi(spec);
+          };
+          if (spec.titleEl) spec.titleEl.textContent = slot.title ? String(slot.title) : '';
+        });
+
+        aiLoading.hidden = true;
+        aiResult.style.display = 'block';
+        document.body.classList.add('landing-page--has-result');
+        aiResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        saveLastSong(data);
+      }
+
+      async function fetchInstantStatus(songId) {
+        const url = `/api/instant-song-status/${encodeURIComponent(songId)}?t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+          return { status: 'missing', ...data };
+        }
+        if (!response.ok) {
+          throw new Error(data.error || response.statusText || 'Erro ao consultar status');
+        }
+        return data;
+      }
+
+      function pollUntilReady(songId) {
+        const existing = pollBySongId.get(songId);
+        if (existing) return existing;
+
+        const job = (async () => {
+          const started = Date.now();
+          while (Date.now() - started < POLL_MAX_MS) {
+            const data = await fetchInstantStatus(songId);
+            if (data.status === 'ready' && data.success && Array.isArray(data.tracks)) {
+              return data;
+            }
+            if (data.status === 'failed') {
+              throw new Error(data.error || 'Falha ao gerar música.');
+            }
+            if (data.status === 'missing') {
+              throw new Error('Geração não encontrada. Tente gerar novamente.');
+            }
+            await new Promise((r) => setTimeout(r, POLL_MS));
+          }
+          const late = await fetchInstantStatus(songId);
+          if (late.status === 'ready' && late.success) return late;
+          throw new Error(
+            'Ainda estamos finalizando. Atualize a página em alguns segundos — sua música foi salva.',
+          );
+        })();
+
+        pollBySongId.set(songId, job);
+        return job.finally(() => {
+          if (pollBySongId.get(songId) === job) pollBySongId.delete(songId);
+        });
+      }
+
+      function showGeneratingUi() {
+        aiLoading.hidden = false;
+        aiResult.style.display = 'none';
+        document.body.classList.remove('landing-page--has-result');
+      }
+
+      async function resumePendingIfAny() {
+        let pending;
+        try {
+          pending = JSON.parse(localStorage.getItem(STORAGE_PENDING) || 'null');
+        } catch {
+          pending = null;
+        }
+        if (!pending?.songId) return false;
+
+        const age = Date.now() - (pending.startedAt || 0);
+        if (age > POLL_MAX_MS) {
+          localStorage.removeItem(STORAGE_PENDING);
+          return false;
+        }
+
+        if (pending.historia) historiaEl.value = pending.historia;
+        if (pending.estilo) estiloEl.value = pending.estilo;
+
+        showGeneratingUi();
+        try {
+          const data = await pollUntilReady(pending.songId);
+          localStorage.removeItem(STORAGE_PENDING);
+          applySongResult(data);
+          return true;
+        } catch (err) {
+          aiLoading.hidden = true;
+          console.error(err);
+          alert(err.message || 'Não foi possível recuperar a geração.');
+          return false;
+        }
+      }
+
+      async function restoreLastSongIfAny() {
+        let saved;
+        try {
+          saved = JSON.parse(localStorage.getItem(STORAGE_LAST) || 'null');
+        } catch {
+          saved = null;
+        }
+        if (!saved?.songId) return;
+
+        try {
+          const data = await fetchInstantStatus(saved.songId);
+          if (data.status === 'ready' && data.success) {
+            applySongResult(data);
+          }
+        } catch {
+          /* ignora */
+        }
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          resumePendingIfAny();
+        }
+      });
+
+      resumePendingIfAny().then((resumed) => {
+        if (!resumed) restoreLastSongIfAny();
+      });
 
       aiForm.onsubmit = async (e) => {
         e.preventDefault();
         resetPreviews();
         const payload = buildDescricaoPayload();
 
-        aiLoading.hidden = false;
-        aiResult.style.display = 'none';
+        showGeneratingUi();
 
         try {
           const response = await fetch('/api/generate-instant-song', {
@@ -363,68 +591,53 @@
             body: JSON.stringify(payload),
           });
 
-          const data = await response.json();
+          const data = await response.json().catch(() => ({}));
 
-          if (response.ok && data.success) {
-            currentSong = data;
-            const list = Array.isArray(data.tracks) ? data.tracks : [];
-            const dualGrid = document.getElementById('dualPreviewGrid');
-            if (dualGrid) dualGrid.classList.toggle('dual-preview--single', list.length < 2);
-            setBuyCta(list.length > 1);
-
-            const tit = data.title ? String(data.title).trim() : '';
-            document.getElementById('dualPreviewSubtitle').textContent =
-              list.length > 1
-                ? tit
-                  ? `Duas versões de «${tit}». Ouça até metade de cada prévia.`
-                  : 'Duas versões criadas. Ouça até metade de cada prévia.'
-                : tit
-                  ? `«${tit}» — ouça até metade da prévia.`
-                  : 'Ouça até metade da prévia.';
-
-            players.forEach((spec, idx) => {
-              const slot = list[idx];
-              spec.wrap.style.display = slot ? '' : 'none';
-              spec.wrap.closest('.dual-preview__col').style.display = slot ? '' : 'none';
-              if (!slot) return;
-              spec.audio.src = slot.previewUrl || '';
-              spec.audio.onloadedmetadata = () => {
-                const k = idx === 0 ? 'v1' : 'v2';
-                previewEnds[k] = Number.isFinite(spec.audio.duration)
-                  ? spec.audio.duration * PREVIEW_HALF
-                  : Infinity;
-              };
-              if (spec.titleEl) spec.titleEl.textContent = slot.title ? String(slot.title) : '';
-            });
-
-            aiLoading.hidden = true;
-            aiResult.style.display = 'block';
-            document.body.classList.add('landing-page--has-result');
-            aiResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            localStorage.setItem(
-              'lastGeneratedSong',
-              JSON.stringify({
-                songId: data.songId,
-                title: data.title,
-                tracks: (data.tracks || []).map((t) => ({
-                  label: t.label,
-                  title: t.title,
-                  previewUrl: t.previewUrl,
-                })),
-              }),
-            );
-          } else if (response.status === 429) {
+          if (response.status === 429) {
             aiLoading.hidden = true;
             alert((data.error || 'Limite de testes gratuitos.') + '');
-          } else {
+            return;
+          }
+
+          if (
+            !response.ok &&
+            response.status !== 202 &&
+            data.status !== 'processing'
+          ) {
             aiLoading.hidden = true;
             alert('Erro ao gerar música: ' + (data.error || response.statusText || 'Tente novamente.'));
+            return;
           }
+
+          const songId = data.songId;
+          if (!songId) {
+            aiLoading.hidden = true;
+            alert('Resposta inválida do servidor.');
+            return;
+          }
+
+          if (data.status === 'ready' && data.success && Array.isArray(data.tracks)) {
+            localStorage.removeItem(STORAGE_PENDING);
+            applySongResult(data);
+            return;
+          }
+
+          localStorage.setItem(
+            STORAGE_PENDING,
+            JSON.stringify({
+              songId,
+              ...payload,
+              startedAt: Date.now(),
+            }),
+          );
+
+          const ready = await pollUntilReady(songId);
+          localStorage.removeItem(STORAGE_PENDING);
+          applySongResult(ready);
         } catch (err) {
           console.error(err);
           aiLoading.hidden = true;
-          alert('Erro de conexão ao servidor.');
+          alert(err.message || 'Erro de conexão. Se já gerou, atualize a página para recuperar.');
         }
       };
 

@@ -1045,14 +1045,70 @@ app.post("/api/generate-delivery", async (req, res) => {
   }
 });
 
+function isInstantSongReady(disk) {
+  if (!disk) return false;
+  if (disk.status === "ready") return true;
+  if (disk.status === "processing" || disk.status === "failed") return false;
+  return Boolean(
+    safePublicHttpUrl(disk.fullUrl) ||
+      (Array.isArray(disk.tracks) && disk.tracks.some((t) => safePublicHttpUrl(t?.audioUrl))),
+  );
+}
+
+function buildInstantReadyPayload(disk) {
+  const songId = cleanText(disk.songId);
+  const title = cleanText(disk.title) || instantTitleFromHistoria(disk.historia);
+  const token = cleanText(disk.previewToken);
+  const rows = Array.isArray(disk.tracks) ? disk.tracks : [];
+  const v0 = rows[0];
+  const v1 = rows[1];
+  const qBase = (i) =>
+    `/api/instant-preview?songId=${encodeURIComponent(songId)}&i=${i}&token=${encodeURIComponent(token)}`;
+
+  return {
+    success: true,
+    status: "ready",
+    songId,
+    title,
+    tracks: [
+      {
+        label: "Versão 1",
+        previewUrl: qBase(0),
+        title: v0?.title || title,
+      },
+      ...(v1 || safePublicHttpUrl(disk.fullUrlB)
+        ? [
+            {
+              label: "Versão 2",
+              previewUrl: qBase(1),
+              title: v1?.title || title,
+            },
+          ]
+        : []),
+    ],
+  };
+}
+
+async function saveInstantSongProcessing(songId, historia, previewToken) {
+  await saveInstantSongRecord(songId, {
+    songId,
+    status: "processing",
+    historia: cleanText(historia),
+    criadoEm: new Date().toISOString(),
+    previewToken: cleanText(previewToken),
+  });
+}
+
 async function persistInstantSongRecord(songId, historia, trackList, previewToken) {
   const t0 = trackList[0];
   const t1 = trackList[1];
   await saveInstantSongRecord(songId, {
     songId,
+    status: "ready",
     historia: cleanText(historia),
     criadoEm: new Date().toISOString(),
     previewToken: cleanText(previewToken),
+    prontoEm: new Date().toISOString(),
     tracks: trackList.map((t, i) => ({
       label: `Versão ${i + 1}`,
       audioUrl: t.audioUrl,
@@ -1062,6 +1118,55 @@ async function persistInstantSongRecord(songId, historia, trackList, previewToke
     fullUrlB: t1?.audioUrl ?? null,
     title: t0?.title || instantTitleFromHistoria(historia),
   });
+}
+
+async function executeInstantGenerationJob(songId, descricao, requestIp) {
+  const previewToken = randomBytes(32).toString("hex");
+  try {
+    const disk = await loadInstantSongRecord(songId);
+    const token = cleanText(disk?.previewToken) || previewToken;
+    if (!cleanText(disk?.previewToken)) {
+      await saveInstantSongProcessing(songId, descricao, token);
+    }
+
+    /** @type {{ audioUrl: string, title: string }[]} */
+    let trackPairs = [];
+
+    const sunoTracks = await generateWithSuno(descricao).catch((e) => {
+      console.warn("Suno falhou ou indisponível, usando fallback de demonstração:", e?.message || e);
+      return null;
+    });
+
+    if (Array.isArray(sunoTracks) && sunoTracks.length > 0) {
+      trackPairs = sunoTracks;
+    } else {
+      console.log(`Gerando música (demo): — ${descricao.slice(0, 40)}…`);
+      await new Promise((r) => setTimeout(r, 2000));
+      const demo =
+        "https://res.cloudinary.com/dc48hzb6b/video/upload/v1778091333/Dona_Teresa_u4rkas.mp3";
+      trackPairs = [
+        { audioUrl: demo, title: "Demo · Versão 1 (adicione SUNO_API_KEY)" },
+        { audioUrl: demo, title: "Demo · Versão 2 (mesmo áudio exemplo)" },
+      ];
+    }
+
+    await persistInstantSongRecord(songId, descricao, trackPairs.slice(0, 2), token);
+    await appendInstantGenerationForIp(requestIp).catch(() => {});
+    console.log(`[instant] Pronta: ${songId}`);
+  } catch (err) {
+    console.error(`[instant] Falhou ${songId}:`, err);
+    const disk = await loadInstantSongRecord(songId);
+    await saveInstantSongRecord(songId, {
+      ...(disk || {}),
+      songId,
+      status: "failed",
+      historia: cleanText(descricao),
+      error: err?.message?.startsWith?.("suno_")
+        ? "Não foi possível gerar com o Suno. Tente de novo em instantes."
+        : "Falha ao gerar música. Tente novamente.",
+      falhouEm: new Date().toISOString(),
+    });
+  }
 }
 
 // Opcional: o Suno (sunoapi.org) pode disparar webhook — respondemos para evitar timeouts do lado deles
@@ -1108,7 +1213,40 @@ app.get("/api/instant-preview", async (req, res) => {
   }
 });
 
-// API: gera música (Suno quando SUNO_API_KEY existe; caso contrário, demo interna)
+/** Status da geração (permite recuperar após refresh ou app em segundo plano). */
+app.get("/api/instant-song-status/:songId", async (req, res) => {
+  const songId = cleanText(req.params.songId);
+  if (!songId) {
+    return res.status(400).json({ error: "ID inválido." });
+  }
+
+  const disk = await loadInstantSongRecord(songId);
+  if (!disk) {
+    return res.status(404).json({ error: "Geração não encontrada.", status: "missing" });
+  }
+
+  if (disk.status === "failed") {
+    return res.json({
+      success: false,
+      status: "failed",
+      songId,
+      error: cleanText(disk.error) || "Falha ao gerar música.",
+    });
+  }
+
+  if (isInstantSongReady(disk)) {
+    return res.json(buildInstantReadyPayload(disk));
+  }
+
+  return res.json({
+    success: true,
+    status: "processing",
+    songId,
+    criadoEm: disk.criadoEm || null,
+  });
+});
+
+// Inicia geração em segundo plano (resposta imediata — não quebra se o celular fechar a aba).
 app.post("/api/generate-instant-song", async (req, res) => {
   const historia = cleanText(req.body?.historia);
   const estilo = cleanText(req.body?.estilo);
@@ -1150,70 +1288,27 @@ app.post("/api/generate-instant-song", async (req, res) => {
     });
   }
 
+  const songId = randomUUID();
+  const previewToken = randomBytes(32).toString("hex");
+
   try {
-    const songId = randomUUID();
-    const fallbackTitle = instantTitleFromHistoria(descricao);
+    await saveInstantSongProcessing(songId, descricao, previewToken);
 
-    /** @type {{ audioUrl: string, title: string }[]} */
-    let trackPairs = [];
-
-    const sunoTracks = await generateWithSuno(descricao).catch((e) => {
-      console.warn("Suno falhou ou indisponível, usando fallback de demonstração:", e?.message || e);
-      return null;
+    setImmediate(() => {
+      executeInstantGenerationJob(songId, descricao, requestIp).catch((err) => {
+        console.error("[instant] Erro não tratado no job:", err);
+      });
     });
 
-    if (Array.isArray(sunoTracks) && sunoTracks.length > 0) {
-      trackPairs = sunoTracks;
-    } else {
-      console.log(`Gerando música (demo): — ${descricao.slice(0, 40)}…`);
-      await new Promise((r) => setTimeout(r, 2000));
-      const demo =
-        "https://res.cloudinary.com/dc48hzb6b/video/upload/v1778091333/Dona_Teresa_u4rkas.mp3";
-      trackPairs = [
-        { audioUrl: demo, title: "Demo · Versão 1 (adicione SUNO_API_KEY)" },
-        { audioUrl: demo, title: "Demo · Versão 2 (mesmo áudio exemplo)" },
-      ];
-    }
-
-    const previewToken = randomBytes(32).toString("hex");
-    await persistInstantSongRecord(songId, descricao, trackPairs.slice(0, 2), previewToken);
-
-    await appendInstantGenerationForIp(requestIp).catch(() => {});
-
-    const v0 = trackPairs[0];
-    const v1 = trackPairs[1];
-    const title = cleanText(v0?.title) || fallbackTitle;
-
-    const qBase = (i) =>
-      `/api/instant-preview?songId=${encodeURIComponent(songId)}&i=${i}&token=${encodeURIComponent(previewToken)}`;
-
-    res.json({
+    return res.status(202).json({
       success: true,
+      status: "processing",
       songId,
-      title,
-      tracks: [
-        {
-          label: "Versão 1",
-          previewUrl: qBase(0),
-          title: v0.title || title,
-        },
-        ...(v1
-          ? [
-              {
-                label: "Versão 2",
-                previewUrl: qBase(1),
-                title: v1.title || title,
-              },
-            ]
-          : []),
-      ],
     });
   } catch (err) {
-    console.error("Erro na geração IA:", err);
-    res.status(500).json({
-      error: err?.message?.startsWith?.("suno_")
-        ? "Não foi possível gerar com o Suno. Tente de novo ou use o modo demo sem chave."
-        : "Falha ao gerar música. Tente novamente.",
+    console.error("Erro ao iniciar geração IA:", err);
+    return res.status(500).json({
+      error: "Não foi possível iniciar a geração. Tente novamente.",
     });
   }
 });
@@ -1411,6 +1506,14 @@ app.use(express.static("."));
 
 
 const port = process.env.PORT || 3000;
+
+process.on("unhandledRejection", (err) => {
+  console.error("[process] unhandledRejection:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[process] uncaughtException:", err);
+});
 
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
