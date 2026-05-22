@@ -5,11 +5,15 @@ import dotenv from "dotenv";
 import { randomUUID, randomBytes } from "crypto";
 import { Resend } from "resend";
 import path from "path";
+import { fileURLToPath } from "url";
 import { mkdir, writeFile, readFile } from "fs/promises";
 import fileUpload from "express-fileupload";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-dotenv.config();
+// .env na raiz do repo; fallback em homenagem-musical/ (legado local)
+dotenv.config({ path: path.join(__dirname, "homenagem-musical", ".env") });
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 app.set("trust proxy", 1);
@@ -1145,7 +1149,8 @@ async function executeInstantGenerationJob(songId, descricao, requestIp) {
 
     if (Array.isArray(sunoTracks) && sunoTracks.length > 0) {
       trackPairs = sunoTracks;
-    } else {
+    } else if (!cleanText(process.env.SUNO_API_KEY)) {
+      console.warn("[instant] SUNO_API_KEY ausente — defina no .env ou nas variáveis do servidor.");
       console.log(`Gerando música (demo): — ${descricao.slice(0, 40)}…`);
       await new Promise((r) => setTimeout(r, 2000));
       const demo =
@@ -1154,6 +1159,8 @@ async function executeInstantGenerationJob(songId, descricao, requestIp) {
         { audioUrl: demo, title: "Demo · Versão 1 (adicione SUNO_API_KEY)" },
         { audioUrl: demo, title: "Demo · Versão 2 (mesmo áudio exemplo)" },
       ];
+    } else {
+      throw new Error("suno_unavailable");
     }
 
     await persistInstantSongRecord(songId, descricao, trackPairs.slice(0, 2), token);
@@ -1522,5 +1529,7 @@ process.on("uncaughtException", (err) => {
 });
 
 app.listen(port, () => {
+  const sunoOk = Boolean(cleanText(process.env.SUNO_API_KEY));
   console.log(`Servidor rodando na porta ${port}`);
+  console.log(`[config] SUNO_API_KEY: ${sunoOk ? "configurada" : "ausente (modo demo local)"}`);
 });
