@@ -186,11 +186,31 @@
         btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
       }
 
+      function audioDurationSec(audio) {
+        const d = audio.duration;
+        if (Number.isFinite(d) && d > 0) return d;
+        try {
+          if (audio.seekable && audio.seekable.length > 0) {
+            const end = audio.seekable.end(audio.seekable.length - 1);
+            if (Number.isFinite(end) && end > 0) return end;
+          }
+        } catch (_) {}
+        return 0;
+      }
+
       function previewDuration(spec) {
         const end = previewEnds[spec.key];
         if (Number.isFinite(end) && end > 0) return end;
-        const d = spec.audio.duration;
-        return Number.isFinite(d) && d > 0 ? d : 0;
+        return audioDurationSec(spec.audio);
+      }
+
+      function syncPreviewEnd(spec) {
+        const dur = audioDurationSec(spec.audio);
+        if (dur <= 0) return false;
+        previewEnds[spec.key] = dur * PREVIEW_HALF;
+        spec.seek.classList.add('modern-player-card__seek--ready');
+        updateSeekUi(spec);
+        return true;
       }
 
       function updateSeekUi(spec) {
@@ -234,6 +254,7 @@
           p.thumb.style.left = '0%';
           p.seek.setAttribute('aria-valuenow', '0');
           p.seek.classList.remove('modern-player-card__seek--active');
+          p.seek.classList.remove('modern-player-card__seek--ready');
           setPlayState(p.btn, false);
           if (p.titleEl) p.titleEl.textContent = '';
         });
@@ -244,6 +265,7 @@
         const { audio, btn, seek } = spec;
 
         audio.addEventListener('play', () => {
+          syncPreviewEnd(spec);
           players.forEach((p) => {
             if (p === spec) return;
             if (!p.audio.paused) {
@@ -270,7 +292,9 @@
         };
 
         audio.addEventListener('progress', () => updateSeekUi(spec));
-        audio.addEventListener('loadedmetadata', () => updateSeekUi(spec));
+        ['loadedmetadata', 'durationchange', 'loadeddata', 'canplay'].forEach((evName) => {
+          audio.addEventListener(evName, () => syncPreviewEnd(spec));
+        });
 
         audio.onseeking = () => {
           if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime > previewEnds[keyLabel]) {
@@ -279,6 +303,7 @@
         };
 
         audio.ontimeupdate = () => {
+          syncPreviewEnd(spec);
           if (Number.isFinite(previewEnds[keyLabel]) && audio.currentTime >= previewEnds[keyLabel] - 0.06) {
             audio.pause();
             audio.currentTime = previewEnds[keyLabel];
@@ -449,13 +474,8 @@
           spec.wrap.closest('.dual-preview__col').style.display = slot ? '' : 'none';
           if (!slot) return;
           spec.audio.src = slot.previewUrl || '';
-          spec.audio.onloadedmetadata = () => {
-            const k = idx === 0 ? 'v1' : 'v2';
-            previewEnds[k] = Number.isFinite(spec.audio.duration)
-              ? spec.audio.duration * PREVIEW_HALF
-              : Infinity;
-            updateSeekUi(spec);
-          };
+          spec.audio.load();
+          syncPreviewEnd(spec);
           if (spec.titleEl) spec.titleEl.textContent = slot.title ? String(slot.title) : '';
         });
 

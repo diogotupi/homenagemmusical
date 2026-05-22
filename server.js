@@ -158,11 +158,9 @@ async function streamInstantPreviewToResponse(res, upstreamUrl) {
     }
   }
   const ct = upstreamResp.headers.get("content-type") || "audio/mpeg";
-  res.setHeader("Content-Type", ct);
-  res.setHeader("Cache-Control", "private, no-store");
-  res.setHeader("X-Robots-Tag", "noindex");
 
   const reader = upstreamResp.body.getReader();
+  const chunks = [];
   let sent = 0;
   try {
     while (sent < byteLimit) {
@@ -171,17 +169,25 @@ async function streamInstantPreviewToResponse(res, upstreamUrl) {
       if (!value?.byteLength) continue;
       const room = byteLimit - sent;
       if (value.byteLength <= room) {
-        res.write(Buffer.from(value));
+        chunks.push(Buffer.from(value));
         sent += value.byteLength;
       } else {
-        res.write(Buffer.from(value.buffer, value.byteOffset, room));
+        chunks.push(Buffer.from(value.buffer, value.byteOffset, room));
         await reader.cancel().catch(() => {});
         break;
       }
     }
   } finally {
-    res.end();
+    await reader.cancel().catch(() => {});
   }
+
+  const body = Buffer.concat(chunks);
+  res.setHeader("Content-Type", ct);
+  res.setHeader("Content-Length", String(body.length));
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("X-Robots-Tag", "noindex");
+  res.end(body);
   return true;
 }
 
