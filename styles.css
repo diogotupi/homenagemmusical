@@ -523,6 +523,26 @@ h2 {
   color: var(--teal);
 }
 
+.landing-contact {
+  margin: 1rem auto 0;
+  max-width: 36rem;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: rgba(22, 18, 15, 0.42);
+}
+
+.landing-contact a {
+  color: rgba(22, 18, 15, 0.55);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.landing-contact a:hover {
+  color: var(--teal);
+}
+
 .contact {
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
