@@ -444,6 +444,7 @@
           STORAGE_LAST,
           JSON.stringify({
             songId: data.songId,
+            sunoTaskId: data.sunoTaskId || "",
             title: data.title,
             tracks: (data.tracks || []).map((t) => ({
               label: t.label,
@@ -692,6 +693,7 @@
               instantSong: {
                 songId: currentSong.songId,
                 title: currentSong.title,
+                sunoTaskId: currentSong.sunoTaskId || "",
               },
             }),
           });

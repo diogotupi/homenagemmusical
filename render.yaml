@@ -1,0 +1,14 @@
+# Blueprint Render — disco persistente para pedidos/prévias Suno
+services:
+  - type: web
+    name: homenagemmusical
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: hmusical-data
+      mountPath: /var/data
+      sizeGB: 1
