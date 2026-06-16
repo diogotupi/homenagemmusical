@@ -1166,6 +1166,17 @@ select option {
   margin-inline: auto;
 }
 
+.music-playground__save-note {
+  margin: 1.15rem auto 1.35rem;
+  max-width: 22rem;
+  padding: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: rgba(22, 18, 15, 0.45);
+}
+
 .dual-preview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
