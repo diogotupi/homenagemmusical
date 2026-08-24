@@ -116,6 +116,33 @@
             <span class="music-playground__cta-main">Fazer o download</span>
             <span class="music-playground__cta-sub">Das duas versões em MP3 · <strong>R$ 19,00</strong></span>
           </button>
+
+          <div id="payChooser" class="pay-chooser" hidden>
+            <p class="pay-chooser__title">Como prefere pagar?</p>
+            <p class="pay-chooser__hint">R$ 19,00 · escolha uma opção</p>
+            <div class="pay-chooser__actions">
+              <button type="button" class="pay-chooser__btn pay-chooser__btn--pix" id="btnPayPix">
+                PIX
+                <span>Mais fácil no celular</span>
+              </button>
+              <button type="button" class="pay-chooser__btn pay-chooser__btn--card" id="btnPayCard">
+                Cartão de crédito
+                <span>Paga no Stripe</span>
+              </button>
+            </div>
+            <button type="button" class="pay-chooser__back" id="btnPayChooserBack">Voltar</button>
+          </div>
+
+          <div id="pixPanel" class="pix-panel" hidden>
+            <p class="pix-panel__title">Pague com PIX</p>
+            <p class="pix-panel__lead">Abra o banco, escolha PIX, cole o código e pague. Esta tela atualiza sozinha.</p>
+            <div class="pix-panel__qr-wrap">
+              <img id="pixQrImg" class="pix-panel__qr" alt="QR Code PIX" width="220" height="220" />
+            </div>
+            <button type="button" class="pix-panel__copy" id="btnPixCopy">Copiar código PIX</button>
+            <p class="pix-panel__status" id="pixStatus" role="status">Aguardando pagamento…</p>
+            <button type="button" class="pay-chooser__back" id="btnPixBack">Voltar</button>
+          </div>
         </div>
       </div>
       <p class="landing-contact">
@@ -671,53 +698,182 @@
         }
       };
 
-      btnComprar.onclick = async () => {
-        if (!currentSong?.songId) {
-          alert('Gere uma preview antes de fazer o download.');
-          return;
-        }
-        btnComprar.disabled = true;
-        const buyHtml = btnComprar.innerHTML;
-        btnComprar.innerHTML = '<span class="music-playground__cta-main music-playground__cta-main--solo">Um instante…</span>';
+      const payChooser = document.getElementById('payChooser');
+      const pixPanel = document.getElementById('pixPanel');
+      const btnPayPix = document.getElementById('btnPayPix');
+      const btnPayCard = document.getElementById('btnPayCard');
+      const btnPayChooserBack = document.getElementById('btnPayChooserBack');
+      const btnPixBack = document.getElementById('btnPixBack');
+      const btnPixCopy = document.getElementById('btnPixCopy');
+      const pixQrImg = document.getElementById('pixQrImg');
+      const pixStatus = document.getElementById('pixStatus');
+      let pixPollTimer = null;
+      let pixCopiaCola = '';
 
+      function stopPixPoll() {
+        if (pixPollTimer) {
+          clearInterval(pixPollTimer);
+          pixPollTimer = null;
+        }
+      }
+
+      function showBuyButton() {
+        stopPixPoll();
+        btnComprar.hidden = false;
+        if (payChooser) payChooser.hidden = true;
+        if (pixPanel) pixPanel.hidden = true;
+      }
+
+      function showPayChooser() {
+        stopPixPoll();
+        btnComprar.hidden = true;
+        if (pixPanel) pixPanel.hidden = true;
+        if (payChooser) payChooser.hidden = false;
+      }
+
+      function checkoutPayload() {
+        return {
+          plan: 'essencial',
+          clientData: {
+            nome: 'Cliente Instantâneo',
+            email: 'pendente@email.com',
+            whatsapp: '00000000',
+            ocasiao: 'Geração instantânea',
+            estilo: estiloEl.value.trim(),
+            historia: historiaEl.value.trim(),
+          },
+          redirectUrl: window.location.origin + '/sucesso-download.html',
+          instantSong: {
+            songId: currentSong.songId,
+            title: currentSong.title,
+            sunoTaskId: currentSong.sunoTaskId || '',
+          },
+        };
+      }
+
+      async function startCardCheckout() {
+        btnPayCard.disabled = true;
+        btnPayPix.disabled = true;
         try {
           const response = await fetch('/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              plan: 'essencial',
-              clientData: {
-                nome: 'Cliente Instantâneo',
-                email: 'pendente@email.com',
-                whatsapp: '00000000',
-                ocasiao: 'Geração instantânea',
-                estilo: estiloEl.value.trim(),
-                historia: historiaEl.value.trim(),
-              },
-              redirectUrl: window.location.origin + '/sucesso-download.html',
-              instantSong: {
-                songId: currentSong.songId,
-                title: currentSong.title,
-                sunoTaskId: currentSong.sunoTaskId || "",
-              },
-            }),
+            body: JSON.stringify(checkoutPayload()),
           });
-
           const data = await response.json();
           if (data.url) {
             window.location.href = data.url;
-          } else {
-            alert(data.error || 'Erro ao criar sessão de pagamento.');
-            btnComprar.disabled = false;
-            btnComprar.innerHTML = buyHtml;
+            return;
           }
+          alert(data.error || 'Erro ao criar sessão de pagamento.');
         } catch (err) {
           console.error(err);
           alert('Erro ao conectar ao checkout.');
-          btnComprar.disabled = false;
-          btnComprar.innerHTML = buyHtml;
+        } finally {
+          btnPayCard.disabled = false;
+          btnPayPix.disabled = false;
         }
+      }
+
+      async function startPixCheckout() {
+        btnPayCard.disabled = true;
+        btnPayPix.disabled = true;
+        if (pixStatus) pixStatus.textContent = 'Gerando PIX…';
+        try {
+          const response = await fetch('/api/create-pix-charge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(checkoutPayload()),
+          });
+          const data = await response.json();
+          if (!response.ok || !data.orderId) {
+            alert(data.error || 'Erro ao gerar PIX.');
+            return;
+          }
+
+          pixCopiaCola = data.copiaCola || '';
+          if (payChooser) payChooser.hidden = true;
+          if (pixPanel) pixPanel.hidden = false;
+
+          if (pixQrImg) {
+            if (data.qrCodeBase64) {
+              pixQrImg.src = 'data:image/png;base64,' + data.qrCodeBase64;
+              pixQrImg.hidden = false;
+            } else {
+              pixQrImg.removeAttribute('src');
+              pixQrImg.hidden = true;
+            }
+          }
+          if (pixStatus) pixStatus.textContent = 'Aguardando pagamento…';
+          if (btnPixCopy) {
+            btnPixCopy.textContent = 'Copiar código PIX';
+            btnPixCopy.disabled = !pixCopiaCola;
+          }
+
+          stopPixPoll();
+          pixPollTimer = setInterval(async () => {
+            try {
+              const stRes = await fetch('/api/pix-status/' + encodeURIComponent(data.orderId), {
+                cache: 'no-store',
+              });
+              const st = await stRes.json().catch(() => ({}));
+              if (st.status === 'paid') {
+                stopPixPoll();
+                if (pixStatus) pixStatus.textContent = 'Pagamento confirmado! Redirecionando…';
+                window.location.href =
+                  window.location.origin +
+                  '/sucesso-download.html?order_id=' +
+                  encodeURIComponent(data.orderId);
+                return;
+              }
+              if (st.status === 'expired' || st.status === 'failed') {
+                stopPixPoll();
+                if (pixStatus) {
+                  pixStatus.textContent =
+                    st.status === 'expired'
+                      ? 'Este PIX expirou. Volte e gere outro.'
+                      : 'Pagamento não concluído. Tente novamente.';
+                }
+              }
+            } catch (e) {
+              console.warn(e);
+            }
+          }, 3000);
+        } catch (err) {
+          console.error(err);
+          alert('Erro ao gerar PIX.');
+        } finally {
+          btnPayCard.disabled = false;
+          btnPayPix.disabled = false;
+        }
+      }
+
+      btnComprar.onclick = () => {
+        if (!currentSong?.songId) {
+          alert('Gere uma preview antes de fazer o download.');
+          return;
+        }
+        showPayChooser();
       };
+
+      if (btnPayChooserBack) btnPayChooserBack.onclick = () => showBuyButton();
+      if (btnPixBack) btnPixBack.onclick = () => showPayChooser();
+      if (btnPayCard) btnPayCard.onclick = () => startCardCheckout();
+      if (btnPayPix) btnPayPix.onclick = () => startPixCheckout();
+      if (btnPixCopy) {
+        btnPixCopy.onclick = async () => {
+          if (!pixCopiaCola) return;
+          try {
+            await navigator.clipboard.writeText(pixCopiaCola);
+            btnPixCopy.textContent = 'Código copiado!';
+            setTimeout(() => {
+              btnPixCopy.textContent = 'Copiar código PIX';
+            }, 2500);
+          } catch {
+            window.prompt('Copie o código PIX:', pixCopiaCola);
+          }
+        };
+      }
     })();
   </script>
 </body>

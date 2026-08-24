@@ -204,12 +204,16 @@
         (async () => {
             const params = new URLSearchParams(window.location.search);
             const sessionId = params.get('session_id');
+            const orderId = params.get('order_id');
 
             let songData = { tracks: [] };
 
-            if (sessionId) {
+            if (sessionId || orderId) {
                 try {
-                    const response = await fetch('/api/instant-paid-download?session_id=' + encodeURIComponent(sessionId));
+                    const qs = orderId
+                        ? 'order_id=' + encodeURIComponent(orderId)
+                        : 'session_id=' + encodeURIComponent(sessionId);
+                    const response = await fetch('/api/instant-paid-download?' + qs);
                     if (response.ok) {
                         const j = await response.json();
                         songData = {

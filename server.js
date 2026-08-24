@@ -42,29 +42,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
     const orderId = session.metadata.orderId;
 
     try {
-      const orderPath = path.join(ordersDir, `${orderId}.json`);
-      const orderData = await readFile(orderPath, "utf8");
-      const order = JSON.parse(orderData);
-
-      // Update order status
-      if (order.status === "pago") {
-        return res.json({ received: true });
-      }
-      order.status = "pago";
-      order.pagoEm = new Date().toISOString();
-
-      // Send emails now that payment is confirmed
-      console.log(`Pagamento confirmado para pedido ${orderId}. Enviando e-mails...`);
-      const emailSent = await sendOrderEmail(order);
-      await sendCustomerConfirmationEmail(order);
-
-      order.email = {
-        enviado: emailSent,
-        para: emailTo,
-        enviadoEm: emailSent ? new Date().toISOString() : null,
-      };
-
-      await writeFile(orderPath, JSON.stringify(order, null, 2), "utf8");
+      await markOrderPaid(orderId);
     } catch (err) {
       console.error("Erro ao processar webhook de sucesso:", err);
     }
@@ -83,7 +61,11 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
 if (!stripe) {
   console.warn("AVISO: STRIPE_SECRET_KEY não encontrada. O checkout não funcionará.");
 }
-const dataRoot = cleanText(process.env.DATA_DIR) || process.cwd();
+const mercadoPagoAccessToken = (process.env.MERCADOPAGO_ACCESS_TOKEN || "").trim();
+if (!mercadoPagoAccessToken) {
+  console.warn("AVISO: MERCADOPAGO_ACCESS_TOKEN não encontrada. O PIX não funcionará.");
+}
+const dataRoot = (process.env.DATA_DIR || "").trim() || process.cwd();
 const ordersDir = path.join(dataRoot, "pedidos");
 const uploadsDir = path.join(ordersDir, "uploads");
 const emailTo = process.env.EMAIL_TO || "diogotupi09@gmail.com";
@@ -110,6 +92,203 @@ const planNames = {
   "mais-escolhido": "Mais escolhido",
   premium: "Premium",
 };
+
+async function loadOrderById(orderId) {
+  try {
+    const raw = await readFile(path.join(ordersDir, `${orderId}.json`), "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function saveOrder(order) {
+  await mkdir(ordersDir, { recursive: true });
+  await writeFile(
+    path.join(ordersDir, `${order.id}.json`),
+    JSON.stringify(order, null, 2),
+    "utf8",
+  );
+}
+
+async function markOrderPaid(orderId, extras = {}) {
+  const order = await loadOrderById(orderId);
+  if (!order) return null;
+  if (order.status === "pago") {
+    return { order, alreadyPaid: true };
+  }
+  Object.assign(order, extras);
+  order.status = "pago";
+  order.pagoEm = new Date().toISOString();
+  console.log(`Pagamento confirmado para pedido ${orderId}. Enviando e-mails...`);
+  const emailSent = await sendOrderEmail(order);
+  await sendCustomerConfirmationEmail(order);
+  order.email = {
+    enviado: emailSent,
+    para: emailTo,
+    enviadoEm: emailSent ? new Date().toISOString() : null,
+  };
+  await saveOrder(order);
+  return { order, alreadyPaid: false };
+}
+
+function buildInstantSongOrderFields({ songId, disk, resolvedFullUrl, resolvedSecondUrl, titleFromDisk, instantSong, clientData }) {
+  return {
+    songId,
+    fullUrl: resolvedFullUrl,
+    fullUrlB: resolvedSecondUrl,
+    tracks:
+      disk?.tracks?.length
+        ? disk.tracks.map((row) => ({
+            label: cleanText(row.label) || "Versão",
+            audioUrl: safePublicHttpUrl(row.audioUrl) ? row.audioUrl : "",
+            title: cleanText(row.title || ""),
+          }))
+        : [
+            {
+              label: "Versão 1",
+              audioUrl: resolvedFullUrl,
+              title: titleFromDisk,
+            },
+            ...(resolvedSecondUrl
+              ? [
+                  {
+                    label: "Versão 2",
+                    audioUrl: resolvedSecondUrl,
+                    title: titleFromDisk,
+                  },
+                ]
+              : []),
+          ],
+    title:
+      titleFromDisk ||
+      cleanText(instantSong?.title) ||
+      instantTitleFromHistoria(clientData?.historia || ""),
+  };
+}
+
+async function resolveInstantCheckoutSong(instantSong) {
+  const songId = cleanText(instantSong?.songId);
+  if (!songId) {
+    return { error: "Dados da música incompletos. Gere uma preview primeiro.", status: 400 };
+  }
+  const disk = await loadInstantSongRecordResolved(songId, {
+    sunoTaskId: cleanText(instantSong?.sunoTaskId),
+  });
+  const resolvedFullUrl = diskResolveTrackUrl(disk, 0);
+  const resolvedSecondUrl = diskResolveTrackUrl(disk, 1) || null;
+  if (!resolvedFullUrl) {
+    return { error: "Música não encontrada no servidor. Gere a preview novamente.", status: 400 };
+  }
+  return {
+    songId,
+    disk,
+    resolvedFullUrl,
+    resolvedSecondUrl,
+    titleFromDisk: cleanText(disk?.title),
+  };
+}
+
+async function createMercadoPagoPixPayment({ orderId, amountReais, description, payerEmail }) {
+  if (!mercadoPagoAccessToken) {
+    throw new Error("mp_token_missing");
+  }
+  const resp = await fetch("https://api.mercadopago.com/v1/payments", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${mercadoPagoAccessToken}`,
+      "Content-Type": "application/json",
+      "X-Idempotency-Key": orderId,
+    },
+    body: JSON.stringify({
+      transaction_amount: amountReais,
+      description,
+      payment_method_id: "pix",
+      payer: {
+        email: payerEmail || "cliente@hmusical.com.br",
+      },
+      external_reference: orderId,
+    }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    const msg =
+      data?.message ||
+      data?.cause?.[0]?.description ||
+      data?.error ||
+      `mp_http_${resp.status}`;
+    throw new Error(String(msg));
+  }
+  return data;
+}
+
+async function fetchMercadoPagoPayment(paymentId) {
+  if (!mercadoPagoAccessToken || !paymentId) return null;
+  const resp = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+    headers: { Authorization: `Bearer ${mercadoPagoAccessToken}` },
+  });
+  if (!resp.ok) return null;
+  return resp.json().catch(() => null);
+}
+
+function mapMpStatusToPixStatus(mpStatus) {
+  const s = cleanText(mpStatus).toLowerCase();
+  if (s === "approved") return "paid";
+  if (s === "expired" || s === "cancelled" || s === "canceled") return "expired";
+  if (s === "rejected" || s === "refunded" || s === "charged_back") return "failed";
+  return "pending";
+}
+
+async function buildInstantPaidDownloadJson(order) {
+  const songId = cleanText(order?.instantSong?.songId);
+  let title =
+    cleanText(order?.instantSong?.title) || instantTitleFromHistoria(order?.detalhes?.historia || "");
+
+  const fromDisk = songId ? await loadInstantSongRecord(songId) : null;
+  if (fromDisk?.title) title = cleanText(fromDisk.title);
+
+  /** @type {{ label: string, url: string, title?: string }[]} */
+  const tracksOut = [];
+  const diskOrOrderTracks = Array.isArray(fromDisk?.tracks)
+    ? fromDisk.tracks
+    : Array.isArray(order?.instantSong?.tracks)
+      ? order.instantSong.tracks
+      : [];
+  for (const row of diskOrOrderTracks) {
+    const url = safePublicHttpUrl(row?.audioUrl);
+    if (!url) continue;
+    tracksOut.push({
+      label: cleanText(row.label) || `Versão ${tracksOut.length + 1}`,
+      url,
+      title: cleanText(row.title || ""),
+    });
+  }
+  if (!tracksOut.length) {
+    const u0 =
+      safePublicHttpUrl(fromDisk?.fullUrl) || safePublicHttpUrl(order?.instantSong?.fullUrl);
+    const u1 =
+      safePublicHttpUrl(fromDisk?.fullUrlB) || safePublicHttpUrl(order?.instantSong?.fullUrlB || "");
+    if (u0) tracksOut.push({ label: "Versão 1", url: u0, title });
+    if (u1 && u1 !== u0) tracksOut.push({ label: "Versão 2", url: u1, title });
+  }
+
+  const primaryUrl = tracksOut[0]?.url;
+  if (!primaryUrl) {
+    return { error: "Arquivo não disponível.", status: 404 };
+  }
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      fullUrl: primaryUrl,
+      fullUrlB: tracksOut[1]?.url || null,
+      tracks: tracksOut,
+      title,
+      songId: songId || null,
+    },
+  };
+}
 
 const imageExtensions = {
   "image/jpeg": ".jpg",
@@ -817,22 +996,11 @@ app.post("/create-checkout-session", async (req, res) => {
     return res.status(400).json({ error: "Plano inválido para esta sessão." });
   }
 
-  const songId = cleanText(instantSong.songId);
-  if (!songId) {
-    return res.status(400).json({ error: "Dados da música incompletos. Gere uma preview primeiro." });
+  const resolved = await resolveInstantCheckoutSong(instantSong);
+  if (resolved.error) {
+    return res.status(resolved.status || 400).json({ error: resolved.error });
   }
-
-  const disk = await loadInstantSongRecordResolved(songId, {
-    sunoTaskId: cleanText(instantSong.sunoTaskId),
-  });
-  const resolvedFullUrl = diskResolveTrackUrl(disk, 0);
-  const resolvedSecondUrl = diskResolveTrackUrl(disk, 1) || null;
-
-  if (!resolvedFullUrl) {
-    return res.status(400).json({ error: "Música não encontrada no servidor. Gere a preview novamente." });
-  }
-
-  const titleFromDisk = cleanText(disk?.title);
+  const { songId, disk, resolvedFullUrl, resolvedSecondUrl, titleFromDisk } = resolved;
 
   const pacote = "essencial";
 
@@ -889,6 +1057,7 @@ app.post("/create-checkout-session", async (req, res) => {
       id: orderId,
       criadoEm: new Date().toISOString(),
       stripeSessionId: session.id,
+      paymentMethod: "card",
       status: "checkout_criado",
       tipoPedido: "instantaneo",
       pacote,
@@ -905,45 +1074,18 @@ app.post("/create-checkout-session", async (req, res) => {
         historia: cleanText(clientData.historia),
       },
       foto: null,
-      instantSong: {
+      instantSong: buildInstantSongOrderFields({
         songId,
-        fullUrl: resolvedFullUrl,
-        fullUrlB: resolvedSecondUrl,
-        tracks:
-          disk.tracks?.length
-            ? disk.tracks.map((row) => ({
-                label: cleanText(row.label) || "Versão",
-                audioUrl: safePublicHttpUrl(row.audioUrl) ? row.audioUrl : "",
-                title: cleanText(row.title || ""),
-              }))
-            : [
-                {
-                  label: "Versão 1",
-                  audioUrl: resolvedFullUrl,
-                  title: titleFromDisk,
-                },
-                ...(resolvedSecondUrl
-                  ? [
-                      {
-                        label: "Versão 2",
-                        audioUrl: resolvedSecondUrl,
-                        title: titleFromDisk,
-                      },
-                    ]
-                  : []),
-              ],
-        title:
-          titleFromDisk ||
-          cleanText(instantSong.title) ||
-          instantTitleFromHistoria(clientData.historia || ""),
-      },
+        disk,
+        resolvedFullUrl,
+        resolvedSecondUrl,
+        titleFromDisk,
+        instantSong,
+        clientData,
+      }),
     };
 
-    await writeFile(
-      path.join(ordersDir, `${orderId}.json`),
-      JSON.stringify(order, null, 2),
-      "utf8",
-    );
+    await saveOrder(order);
 
     res.json({ url: session.url, orderId });
   } catch (err) {
@@ -952,81 +1094,241 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-app.get("/api/instant-paid-download", async (req, res) => {
-  const sessionId = typeof req.query.session_id === "string" ? req.query.session_id.trim() : "";
-  if (!sessionId || !stripe) {
-    return res.status(400).json({ error: "Sessão inválida." });
+/** PIX via Mercado Pago — gerador instantâneo */
+app.post("/api/create-pix-charge", async (req, res) => {
+  if (!mercadoPagoAccessToken) {
+    return res.status(503).json({ error: "PIX temporariamente indisponível. Tente cartão ou fale conosco." });
+  }
+
+  const plan = cleanText(req.body?.plan);
+  const clientData = req.body?.clientData || {};
+  const instantSong = req.body?.instantSong || {};
+
+  if (plan !== "essencial") {
+    return res.status(400).json({ error: "Plano inválido para esta sessão." });
+  }
+
+  const resolved = await resolveInstantCheckoutSong(instantSong);
+  if (resolved.error) {
+    return res.status(resolved.status || 400).json({ error: resolved.error });
+  }
+  const { songId, disk, resolvedFullUrl, resolvedSecondUrl, titleFromDisk } = resolved;
+  const pacote = "essencial";
+  const orderId = randomUUID();
+  const amountReais = prices[pacote] / 100;
+  const description =
+    resolvedSecondUrl && resolvedSecondUrl !== resolvedFullUrl
+      ? `${planNames[pacote]} · 2 versões MP3`
+      : `${planNames[pacote]} · MP3`;
+
+  try {
+    const mpPayment = await createMercadoPagoPixPayment({
+      orderId,
+      amountReais,
+      description,
+      payerEmail: cleanText(clientData.email) || "cliente@hmusical.com.br",
+    });
+
+    const tx = mpPayment?.point_of_interaction?.transaction_data || {};
+    const copiaCola = cleanText(tx.qr_code);
+    const qrCodeBase64 = cleanText(tx.qr_code_base64);
+    if (!copiaCola && !qrCodeBase64) {
+      console.error("PIX sem QR/código:", mpPayment?.id, mpPayment?.status);
+      return res.status(502).json({ error: "Não foi possível gerar o PIX. Tente novamente." });
+    }
+
+    const order = {
+      id: orderId,
+      criadoEm: new Date().toISOString(),
+      paymentMethod: "pix",
+      mercadopagoPaymentId: String(mpPayment.id),
+      status: "checkout_criado",
+      tipoPedido: "instantaneo",
+      pacote,
+      plano: planNames[pacote],
+      valorCentavos: prices[pacote],
+      cliente: {
+        nome: cleanText(clientData.nome) || "Cliente Instantâneo",
+        whatsapp: cleanText(clientData.whatsapp),
+        email: cleanText(clientData.email) || "pendente@email.com",
+      },
+      detalhes: {
+        ocasiao: cleanText(clientData.ocasiao) || "Geração instantânea",
+        estilo: cleanText(clientData.estilo),
+        historia: cleanText(clientData.historia),
+      },
+      foto: null,
+      instantSong: buildInstantSongOrderFields({
+        songId,
+        disk,
+        resolvedFullUrl,
+        resolvedSecondUrl,
+        titleFromDisk,
+        instantSong,
+        clientData,
+      }),
+    };
+
+    await saveOrder(order);
+
+    res.json({
+      orderId,
+      paymentId: String(mpPayment.id),
+      qrCodeBase64,
+      copiaCola,
+      expiresAt: mpPayment.date_of_expiration || null,
+      status: mapMpStatusToPixStatus(mpPayment.status),
+    });
+  } catch (err) {
+    console.error("create-pix-charge:", err);
+    res.status(500).json({
+      error:
+        err?.message === "mp_token_missing"
+          ? "PIX temporariamente indisponível."
+          : "Erro ao gerar PIX. Tente novamente ou use cartão.",
+    });
+  }
+});
+
+app.get("/api/pix-status/:orderId", async (req, res) => {
+  const orderId = cleanText(req.params.orderId);
+  if (!orderId) {
+    return res.status(400).json({ error: "Pedido inválido.", status: "failed" });
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    if (session.payment_status !== "paid") {
-      return res.status(403).json({ error: "Pagamento ainda não confirmado." });
+    const order = await loadOrderById(orderId);
+    if (!order || order.tipoPedido !== "instantaneo") {
+      return res.status(404).json({ error: "Pedido não encontrado.", status: "failed" });
+    }
+    if (order.status === "pago") {
+      return res.json({ status: "paid", orderId });
     }
 
-    const orderId = typeof session.metadata?.orderId === "string" ? session.metadata.orderId : "";
-    if (!orderId) {
-      return res.status(404).json({ error: "Pedido não encontrado." });
+    const paymentId = cleanText(String(order.mercadopagoPaymentId || ""));
+    if (!paymentId) {
+      return res.json({ status: "pending", orderId });
     }
 
-    const orderPath = path.join(ordersDir, `${orderId}.json`);
-    const orderRaw = await readFile(orderPath, "utf8");
-    const order = JSON.parse(orderRaw);
+    const mpPayment = await fetchMercadoPagoPayment(paymentId);
+    if (!mpPayment) {
+      return res.json({ status: "pending", orderId });
+    }
 
-    const songId = cleanText(order?.instantSong?.songId);
+    const pixStatus = mapMpStatusToPixStatus(mpPayment.status);
+    if (pixStatus === "paid") {
+      await markOrderPaid(orderId, {
+        mercadopagoPaymentId: String(mpPayment.id),
+        paymentMethod: "pix",
+      });
+      return res.json({ status: "paid", orderId });
+    }
 
-    let title =
-      cleanText(order?.instantSong?.title) || instantTitleFromHistoria(order?.detalhes?.historia || "");
+    return res.json({ status: pixStatus, orderId });
+  } catch (err) {
+    console.error("pix-status:", err);
+    res.status(500).json({ error: "Erro ao consultar PIX.", status: "pending" });
+  }
+});
 
-    const fromDisk = songId ? await loadInstantSongRecord(songId) : null;
-    if (fromDisk?.title) title = cleanText(fromDisk.title);
+app.post("/webhook/mercadopago", express.json(), async (req, res) => {
+  try {
+    const body = req.body || {};
+    let paymentId =
+      cleanText(String(body?.data?.id || "")) ||
+      cleanText(String(body?.id || "")) ||
+      cleanText(typeof req.query?.["data.id"] === "string" ? req.query["data.id"] : "") ||
+      cleanText(typeof req.query?.id === "string" ? req.query.id : "");
 
-    /** @type {{ label: string, url: string, title?: string }[]} */
-    const tracksOut = [];
-    const diskOrOrderTracks = Array.isArray(fromDisk?.tracks)
-      ? fromDisk.tracks
-      : Array.isArray(order?.instantSong?.tracks)
-        ? order.instantSong.tracks
-        : [];
-    for (const row of diskOrOrderTracks) {
-      const url = safePublicHttpUrl(row?.audioUrl);
-      if (!url) continue;
-      tracksOut.push({
-        label: cleanText(row.label) || `Versão ${tracksOut.length + 1}`,
-        url,
-        title: cleanText(row.title || ""),
+    const topic = cleanText(String(body?.type || body?.action || req.query?.type || req.query?.topic || ""));
+    if (topic && !/payment/i.test(topic) && paymentId && topic !== "payment") {
+      // still try if we have an id
+    }
+
+    if (!paymentId) {
+      return res.status(200).json({ received: true });
+    }
+
+    const mpPayment = await fetchMercadoPagoPayment(paymentId);
+    if (!mpPayment) {
+      return res.status(200).json({ received: true });
+    }
+
+    if (mapMpStatusToPixStatus(mpPayment.status) !== "paid") {
+      return res.status(200).json({ received: true });
+    }
+
+    const orderId = cleanText(String(mpPayment.external_reference || ""));
+    if (orderId) {
+      await markOrderPaid(orderId, {
+        mercadopagoPaymentId: String(mpPayment.id),
+        paymentMethod: "pix",
       });
     }
-    if (!tracksOut.length) {
-      const u0 =
-        safePublicHttpUrl(fromDisk?.fullUrl) || safePublicHttpUrl(order?.instantSong?.fullUrl);
-      const u1 =
-        safePublicHttpUrl(fromDisk?.fullUrlB) || safePublicHttpUrl(order?.instantSong?.fullUrlB || "");
-      if (u0) tracksOut.push({ label: "Versão 1", url: u0, title });
-      if (u1 && u1 !== u0) tracksOut.push({ label: "Versão 2", url: u1, title });
+  } catch (err) {
+    console.error("webhook/mercadopago:", err);
+  }
+  res.status(200).json({ received: true });
+});
+
+app.get("/api/instant-paid-download", async (req, res) => {
+  const sessionId = typeof req.query.session_id === "string" ? req.query.session_id.trim() : "";
+  const orderIdQ = typeof req.query.order_id === "string" ? req.query.order_id.trim() : "";
+
+  try {
+    let order = null;
+
+    if (orderIdQ) {
+      order = await loadOrderById(orderIdQ);
+      if (!order) {
+        return res.status(404).json({ error: "Pedido não encontrado." });
+      }
+      if (order.status !== "pago") {
+        const paymentId = cleanText(String(order.mercadopagoPaymentId || ""));
+        if (paymentId) {
+          const mpPayment = await fetchMercadoPagoPayment(paymentId);
+          if (mpPayment && mapMpStatusToPixStatus(mpPayment.status) === "paid") {
+            const marked = await markOrderPaid(orderIdQ, {
+              mercadopagoPaymentId: String(mpPayment.id),
+              paymentMethod: "pix",
+            });
+            order = marked?.order || order;
+          }
+        }
+      }
+      if (order.status !== "pago") {
+        return res.status(403).json({ error: "Pagamento ainda não confirmado." });
+      }
+    } else if (sessionId) {
+      if (!stripe) {
+        return res.status(400).json({ error: "Sessão inválida." });
+      }
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      if (session.payment_status !== "paid") {
+        return res.status(403).json({ error: "Pagamento ainda não confirmado." });
+      }
+      const orderId = typeof session.metadata?.orderId === "string" ? session.metadata.orderId : "";
+      if (!orderId) {
+        return res.status(404).json({ error: "Pedido não encontrado." });
+      }
+      order = await loadOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: "Pedido não encontrado." });
+      }
+    } else {
+      return res.status(400).json({ error: "Sessão inválida." });
     }
 
-    const primaryUrl = tracksOut[0]?.url;
-    if (!primaryUrl) {
-      return res.status(404).json({ error: "Arquivo não disponível." });
+    const result = await buildInstantPaidDownloadJson(order);
+    if (result.error) {
+      return res.status(result.status || 404).json({ error: result.error });
     }
-
-    const secondaryUrl = tracksOut[1]?.url || null;
-
-    res.json({
-      success: true,
-      fullUrl: primaryUrl,
-      fullUrlB: secondaryUrl,
-      tracks: tracksOut,
-      title,
-      songId: songId || null,
-    });
+    res.json(result.body);
   } catch (err) {
     console.error("instant-paid-download:", err);
     res.status(500).json({ error: "Não foi possível validar o pagamento." });
   }
 });
-
 // New Delivery Generation Endpoint (Saves JSON instead of HTML)
 app.post("/api/generate-delivery", async (req, res) => {
   try {
@@ -1589,4 +1891,5 @@ app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
   console.log(`[config] pedidos: ${ordersDir}`);
   console.log(`[config] SUNO_API_KEY: ${sunoOk ? "configurada" : "ausente (modo demo local)"}`);
+  console.log(`[config] MERCADOPAGO PIX: ${mercadoPagoAccessToken ? "configurado" : "ausente"}`);
 });
