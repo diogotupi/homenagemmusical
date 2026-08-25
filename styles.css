@@ -1178,16 +1178,81 @@ select option {
 }
 
 .music-playground__buy[hidden],
+.pay-email-step[hidden],
 .pay-chooser[hidden],
 .pix-panel[hidden] {
   display: none !important;
 }
 
+.pay-email-step,
 .pay-chooser,
 .pix-panel {
   margin: 1.25rem auto 0;
   max-width: 26rem;
   text-align: center;
+}
+
+.pay-email-step__label {
+  display: block;
+  margin: 0 0 0.4rem;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.pay-email-step__input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 0.55rem;
+  padding: 0.95rem 1rem;
+  border: 2px solid rgba(22, 18, 15, 0.14);
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: #fff;
+}
+
+.pay-email-step__input:focus {
+  outline: none;
+  border-color: rgba(15, 118, 110, 0.55);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.pay-email-step__error {
+  margin: 0 0 0.65rem;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #a8432c;
+}
+
+.pay-email-step__continue {
+  width: 100%;
+  min-height: 3.4rem;
+  margin: 0.35rem 0 0;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 14px;
+  background: var(--ink);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.12rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pay-email-step__continue:hover {
+  filter: brightness(1.08);
+}
+
+.pix-panel__download-link {
+  display: inline-block;
+  margin-top: 0.55rem;
+  color: var(--teal);
+  font-weight: 700;
 }
 
 .pay-chooser__title,

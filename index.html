@@ -117,9 +117,28 @@
             <span class="music-playground__cta-sub">Das duas versões em MP3 · <strong>R$ 19,00</strong></span>
           </button>
 
+          <div id="emailStep" class="pay-email-step" hidden>
+            <p class="pay-chooser__title">Seu e-mail</p>
+            <p class="pay-chooser__hint">As músicas serão enviadas para este e-mail depois do pagamento. Confira se está certo.</p>
+            <label class="pay-email-step__label" for="payEmailInput">E-mail</label>
+            <input
+              type="email"
+              id="payEmailInput"
+              class="pay-email-step__input"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="seuemail@exemplo.com"
+              maxlength="120"
+              required
+            />
+            <p class="pay-email-step__error" id="payEmailError" hidden>Digite um e-mail válido.</p>
+            <button type="button" class="pay-email-step__continue" id="btnPayEmailContinue">Continuar</button>
+            <button type="button" class="pay-chooser__back" id="btnPayEmailBack">Voltar</button>
+          </div>
+
           <div id="payChooser" class="pay-chooser" hidden>
             <p class="pay-chooser__title">Como prefere pagar?</p>
-            <p class="pay-chooser__hint">R$ 19,00 · escolha uma opção</p>
+            <p class="pay-chooser__hint" id="payChooserHint">R$ 19,00 · escolha uma opção</p>
             <div class="pay-chooser__actions">
               <button type="button" class="pay-chooser__btn pay-chooser__btn--pix" id="btnPayPix">
                 PIX
@@ -135,7 +154,7 @@
 
           <div id="pixPanel" class="pix-panel" hidden>
             <p class="pix-panel__title">Pague com PIX</p>
-            <p class="pix-panel__lead">Abra o banco, escolha PIX, cole o código e pague. Esta tela atualiza sozinha.</p>
+            <p class="pix-panel__lead" id="pixPanelLead">Abra o banco, escolha PIX, cole o código e pague. Depois do pagamento, enviamos as músicas no seu e-mail.</p>
             <div class="pix-panel__qr-wrap">
               <img id="pixQrImg" class="pix-panel__qr" alt="QR Code PIX" width="220" height="220" />
             </div>
@@ -698,8 +717,13 @@
         }
       };
 
+      const emailStep = document.getElementById('emailStep');
       const payChooser = document.getElementById('payChooser');
       const pixPanel = document.getElementById('pixPanel');
+      const payEmailInput = document.getElementById('payEmailInput');
+      const payEmailError = document.getElementById('payEmailError');
+      const btnPayEmailContinue = document.getElementById('btnPayEmailContinue');
+      const btnPayEmailBack = document.getElementById('btnPayEmailBack');
       const btnPayPix = document.getElementById('btnPayPix');
       const btnPayCard = document.getElementById('btnPayCard');
       const btnPayChooserBack = document.getElementById('btnPayChooserBack');
@@ -707,8 +731,15 @@
       const btnPixCopy = document.getElementById('btnPixCopy');
       const pixQrImg = document.getElementById('pixQrImg');
       const pixStatus = document.getElementById('pixStatus');
+      const pixPanelLead = document.getElementById('pixPanelLead');
+      const payChooserHint = document.getElementById('payChooserHint');
       let pixPollTimer = null;
       let pixCopiaCola = '';
+      let checkoutEmail = '';
+
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(String(email || '').trim());
+      }
 
       function stopPixPoll() {
         if (pixPollTimer) {
@@ -717,26 +748,47 @@
         }
       }
 
-      function showBuyButton() {
-        stopPixPoll();
-        btnComprar.hidden = false;
+      function hideAllPaySteps() {
+        btnComprar.hidden = true;
+        if (emailStep) emailStep.hidden = true;
         if (payChooser) payChooser.hidden = true;
         if (pixPanel) pixPanel.hidden = true;
       }
 
+      function showBuyButton() {
+        stopPixPoll();
+        hideAllPaySteps();
+        btnComprar.hidden = false;
+      }
+
+      function showEmailStep() {
+        stopPixPoll();
+        hideAllPaySteps();
+        if (emailStep) emailStep.hidden = false;
+        if (payEmailError) payEmailError.hidden = true;
+        if (payEmailInput) {
+          payEmailInput.value = checkoutEmail || '';
+          setTimeout(() => payEmailInput.focus(), 50);
+        }
+      }
+
       function showPayChooser() {
         stopPixPoll();
-        btnComprar.hidden = true;
-        if (pixPanel) pixPanel.hidden = true;
+        hideAllPaySteps();
         if (payChooser) payChooser.hidden = false;
+        if (payChooserHint) {
+          payChooserHint.textContent = checkoutEmail
+            ? 'R$ 19,00 · as músicas vão para ' + checkoutEmail
+            : 'R$ 19,00 · escolha uma opção';
+        }
       }
 
       function checkoutPayload() {
         return {
           plan: 'essencial',
           clientData: {
-            nome: 'Cliente Instantâneo',
-            email: 'pendente@email.com',
+            nome: 'Cliente',
+            email: checkoutEmail,
             whatsapp: '00000000',
             ocasiao: 'Geração instantânea',
             estilo: estiloEl.value.trim(),
@@ -752,6 +804,10 @@
       }
 
       async function startCardCheckout() {
+        if (!isValidEmail(checkoutEmail)) {
+          showEmailStep();
+          return;
+        }
         btnPayCard.disabled = true;
         btnPayPix.disabled = true;
         try {
@@ -775,7 +831,32 @@
         }
       }
 
+      function showPixPaidSuccess(orderId) {
+        stopPixPoll();
+        if (pixPanelLead) {
+          pixPanelLead.textContent =
+            'Pronto! Enviamos as músicas para ' +
+            checkoutEmail +
+            '. Confira a caixa de entrada e também o spam.';
+        }
+        if (pixStatus) {
+          pixStatus.innerHTML =
+            'Pagamento confirmado.<br><a class="pix-panel__download-link" href="/sucesso-download.html?order_id=' +
+            encodeURIComponent(orderId) +
+            '">Se quiser, abra os downloads aqui também</a>';
+        }
+        if (btnPixCopy) btnPixCopy.hidden = true;
+        if (pixQrImg) pixQrImg.hidden = true;
+        const qrWrap = document.querySelector('.pix-panel__qr-wrap');
+        if (qrWrap) qrWrap.hidden = true;
+        if (btnPixBack) btnPixBack.textContent = 'Fechar';
+      }
+
       async function startPixCheckout() {
+        if (!isValidEmail(checkoutEmail)) {
+          showEmailStep();
+          return;
+        }
         btnPayCard.disabled = true;
         btnPayPix.disabled = true;
         if (pixStatus) pixStatus.textContent = 'Gerando PIX…';
@@ -792,8 +873,20 @@
           }
 
           pixCopiaCola = data.copiaCola || '';
-          if (payChooser) payChooser.hidden = true;
+          hideAllPaySteps();
           if (pixPanel) pixPanel.hidden = false;
+
+          if (pixPanelLead) {
+            pixPanelLead.textContent =
+              'Abra o banco, escolha PIX, cole o código e pague. Assim que pagar, enviamos as músicas para ' +
+              checkoutEmail +
+              '.';
+          }
+
+          const qrWrap = document.querySelector('.pix-panel__qr-wrap');
+          if (qrWrap) qrWrap.hidden = false;
+          if (btnPixCopy) btnPixCopy.hidden = false;
+          if (btnPixBack) btnPixBack.textContent = 'Voltar';
 
           if (pixQrImg) {
             if (data.qrCodeBase64) {
@@ -818,12 +911,7 @@
               });
               const st = await stRes.json().catch(() => ({}));
               if (st.status === 'paid') {
-                stopPixPoll();
-                if (pixStatus) pixStatus.textContent = 'Pagamento confirmado! Redirecionando…';
-                window.location.href =
-                  window.location.origin +
-                  '/sucesso-download.html?order_id=' +
-                  encodeURIComponent(data.orderId);
+                showPixPaidSuccess(data.orderId);
                 return;
               }
               if (st.status === 'expired' || st.status === 'failed') {
@@ -853,11 +941,49 @@
           alert('Gere uma preview antes de fazer o download.');
           return;
         }
-        showPayChooser();
+        showEmailStep();
       };
 
-      if (btnPayChooserBack) btnPayChooserBack.onclick = () => showBuyButton();
-      if (btnPixBack) btnPixBack.onclick = () => showPayChooser();
+      if (btnPayEmailBack) btnPayEmailBack.onclick = () => showBuyButton();
+      if (btnPayEmailContinue) {
+        btnPayEmailContinue.onclick = () => {
+          const email = (payEmailInput?.value || '').trim().toLowerCase();
+          if (!isValidEmail(email)) {
+            if (payEmailError) payEmailError.hidden = false;
+            if (payEmailInput) payEmailInput.focus();
+            return;
+          }
+          if (payEmailError) payEmailError.hidden = true;
+          checkoutEmail = email;
+          try {
+            localStorage.setItem('checkoutEmail', email);
+          } catch (_) {}
+          showPayChooser();
+        };
+      }
+      if (payEmailInput) {
+        payEmailInput.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            btnPayEmailContinue?.click();
+          }
+        });
+        try {
+          const saved = localStorage.getItem('checkoutEmail') || '';
+          if (isValidEmail(saved)) {
+            checkoutEmail = saved;
+            payEmailInput.value = saved;
+          }
+        } catch (_) {}
+      }
+
+      if (btnPayChooserBack) btnPayChooserBack.onclick = () => showEmailStep();
+      if (btnPixBack) {
+        btnPixBack.onclick = () => {
+          stopPixPoll();
+          showPayChooser();
+        };
+      }
       if (btnPayCard) btnPayCard.onclick = () => startCardCheckout();
       if (btnPayPix) btnPayPix.onclick = () => startPixCheckout();
       if (btnPixCopy) {

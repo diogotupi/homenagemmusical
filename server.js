@@ -299,6 +299,11 @@ const imageExtensions = {
   "image/heif": ".heif",
 };
 
+function isValidEmail(email) {
+  const e = cleanText(email);
+  return Boolean(e) && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(e) && !/^pendente@/iu.test(e);
+}
+
 function cleanText(value) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -738,7 +743,7 @@ async function sendCustomerConfirmationEmail(order) {
     : `Obra em produção! ❤️ Recebemos seu pedido na História Musical`;
 
   if (isInstant) {
-    if (/^pendente@/iu.test(order.cliente.email || "")) {
+    if (!isValidEmail(order.cliente.email)) {
       return false;
     }
     const dl = safePublicHttpUrl(order.instantSong.fullUrl);
@@ -747,34 +752,35 @@ async function sendCustomerConfirmationEmail(order) {
     const secondBtn =
       dl2 && dl2 !== dl
         ? `
-      <p style="text-align:center; margin: 12px 0 0;">
-        <a href="${escapeHtml(dl2)}" style="display:inline-block; background:#0f766e; color:#fff; padding:15px 25px; text-decoration:none; border-radius:8px; font-weight:bold;">
+      <p style="text-align:center; margin: 14px 0 0;">
+        <a href="${escapeHtml(dl2)}" style="display:inline-block; background:#0f766e; color:#fff; padding:18px 28px; text-decoration:none; border-radius:10px; font-weight:bold; font-size:18px;">
           Baixar Versão 2 (MP3)
         </a>
       </p>`
         : "";
     const htmlInstant = `
-    <div style="font-family: sans-serif; line-height: 1.6; color: #16120f; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+    <div style="font-family: sans-serif; line-height: 1.6; color: #16120f; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 24px; border-radius: 12px;">
       <div style="text-align: center; margin-bottom: 20px;">
          <div style="background: #b94f37; color: white; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; display: inline-block; font-weight: bold; font-size: 20px;">H</div>
          <h2 style="margin-top: 10px;">História Musical</h2>
       </div>
-      <h1 style="color: #b94f37; text-align: center;">Obrigado pela compra! ❤️</h1>
-      <p>Olá, <strong>${escapeHtml(order.cliente.nome)}</strong>!</p>
-      <p>O pagamento foi confirmado. Seu pacote inclui as duas versões geradas. Use o mesmo link da página após o checkout ou baixe abaixo.</p>
+      <h1 style="color: #b94f37; text-align: center; font-size: 26px;">Pagamento confirmado</h1>
+      <p style="font-size: 17px;">Olá!</p>
+      <p style="font-size: 17px;">Suas músicas estão prontas. Toque nos botões abaixo para baixar os arquivos MP3 e salvar no celular ou computador.</p>
       <p style="text-align:center; margin: 28px 0 0;">
-        <a href="${escapeHtml(dl)}" style="display:inline-block; background:#b94f37; color:#fff; padding:15px 25px; text-decoration:none; border-radius:8px; font-weight:bold;">
+        <a href="${escapeHtml(dl)}" style="display:inline-block; background:#b94f37; color:#fff; padding:18px 28px; text-decoration:none; border-radius:10px; font-weight:bold; font-size:18px;">
           Baixar Versão 1 (MP3)
         </a>
       </p>${secondBtn}
-      <p style="font-size: 13px; color: #555;">Guarde os arquivos no seu celular ou computador. Os provedores externos podem expirar links após algum tempo.</p>
+      <p style="font-size: 15px; color: #555; margin-top: 28px;">Dica: salve os arquivos agora. Se não achar este e-mail, olhe também na pasta de spam ou lixo eletrônico.</p>
+      <p style="font-size: 14px; color: #777;">Dúvidas? contato@hmusical.com.br</p>
     </div>`;
     try {
       if (!resend) return false;
       const info = await resend.emails.send({
         from: "História Musical <noreply@hmusical.com.br>",
         to: order.cliente.email,
-        subject,
+        subject: "Suas músicas estão prontas — História Musical",
         html: htmlInstant,
       });
       console.log("CONFIRMAÇÃO INSTANTÂNEO:", info);
@@ -991,9 +997,13 @@ app.post("/create-checkout-session", async (req, res) => {
   const clientData = req.body?.clientData || {};
   const redirectUrlRaw = cleanText(req.body?.redirectUrl);
   const instantSong = req.body?.instantSong || {};
+  const clientEmail = cleanText(clientData.email).toLowerCase();
 
   if (plan !== "essencial") {
     return res.status(400).json({ error: "Plano inválido para esta sessão." });
+  }
+  if (!isValidEmail(clientEmail)) {
+    return res.status(400).json({ error: "Informe um e-mail válido para receber as músicas." });
   }
 
   const resolved = await resolveInstantCheckoutSong(instantSong);
@@ -1032,6 +1042,7 @@ app.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       mode: "payment",
       allow_promotion_codes: true,
+      customer_email: clientEmail,
       line_items: [
         {
           price_data: {
@@ -1064,9 +1075,9 @@ app.post("/create-checkout-session", async (req, res) => {
       plano: planNames[pacote],
       valorCentavos: prices[pacote],
       cliente: {
-        nome: cleanText(clientData.nome),
+        nome: cleanText(clientData.nome) || "Cliente",
         whatsapp: cleanText(clientData.whatsapp),
-        email: cleanText(clientData.email),
+        email: clientEmail,
       },
       detalhes: {
         ocasiao: cleanText(clientData.ocasiao),
@@ -1103,9 +1114,13 @@ app.post("/api/create-pix-charge", async (req, res) => {
   const plan = cleanText(req.body?.plan);
   const clientData = req.body?.clientData || {};
   const instantSong = req.body?.instantSong || {};
+  const clientEmail = cleanText(clientData.email).toLowerCase();
 
   if (plan !== "essencial") {
     return res.status(400).json({ error: "Plano inválido para esta sessão." });
+  }
+  if (!isValidEmail(clientEmail)) {
+    return res.status(400).json({ error: "Informe um e-mail válido para receber as músicas." });
   }
 
   const resolved = await resolveInstantCheckoutSong(instantSong);
@@ -1126,7 +1141,7 @@ app.post("/api/create-pix-charge", async (req, res) => {
       orderId,
       amountReais,
       description,
-      payerEmail: cleanText(clientData.email) || "cliente@hmusical.com.br",
+      payerEmail: clientEmail,
     });
 
     const tx = mpPayment?.point_of_interaction?.transaction_data || {};
@@ -1148,9 +1163,9 @@ app.post("/api/create-pix-charge", async (req, res) => {
       plano: planNames[pacote],
       valorCentavos: prices[pacote],
       cliente: {
-        nome: cleanText(clientData.nome) || "Cliente Instantâneo",
+        nome: cleanText(clientData.nome) || "Cliente",
         whatsapp: cleanText(clientData.whatsapp),
-        email: cleanText(clientData.email) || "pendente@email.com",
+        email: clientEmail,
       },
       detalhes: {
         ocasiao: cleanText(clientData.ocasiao) || "Geração instantânea",
@@ -1178,6 +1193,7 @@ app.post("/api/create-pix-charge", async (req, res) => {
       copiaCola,
       expiresAt: mpPayment.date_of_expiration || null,
       status: mapMpStatusToPixStatus(mpPayment.status),
+      email: clientEmail,
     });
   } catch (err) {
     console.error("create-pix-charge:", err);
